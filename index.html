@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Poker Timer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       V1: 赛前配置页
+       ============================================================ -->
+  <div id="view-setup" class="view setup-view active">
+    <div class="setup-header">
+      <h1>Poker Timer</h1>
+      <div class="header-actions">
+        <button class="btn btn-ghost" onclick="showHistory()">历史</button>
+        <button class="btn btn-ghost" onclick="showImportExport()">导入/导出</button>
+      </div>
+    </div>
+
+    <!-- Tab 导航 -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="tab-basic">基础设置</button>
+      <button class="tab-btn" data-tab="tab-players">玩家登记</button>
+      <button class="tab-btn" data-tab="tab-blinds">盲注表</button>
+      <button class="tab-btn" data-tab="tab-mushroom">蘑菇规则</button>
+      <button class="tab-btn" data-tab="tab-prize">奖池</button>
+    </div>
+
+    <!-- Tab 内容：基础设置 -->
+    <div id="tab-basic" class="tab-content active">
+      <div class="form-group">
+        <label>赛事名称</label>
+        <input type="text" id="cfg-name" value="友谊赛" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label>买入筹码</label>
+        <input type="number" id="cfg-buyin" value="10000" min="1000" step="1000">
+      </div>
+      <div class="form-group">
+        <label>筹码面额（仅供参考）</label>
+        <p style="color:var(--text-secondary);font-size:14px;">100 / 1,000 / 10,000</p>
+      </div>
+    </div>
+
+    <!-- Tab 内容：玩家登记 -->
+    <div id="tab-players" class="tab-content">
+      <div class="player-form">
+        <input type="text" id="input-phone" placeholder="手机尾号（4位）" maxlength="4" inputmode="numeric">
+        <input type="text" id="input-nickname" placeholder="昵称">
+        <input type="text" id="input-seat" placeholder="座位号" style="width:70px;flex:none;" maxlength="3">
+        <button class="btn btn-primary" onclick="addPlayerFromForm()">添加</button>
+      </div>
+      <div id="player-hint" style="font-size:13px;color:var(--accent);margin-bottom:8px;display:none;"></div>
+      <ul id="player-list" class="player-list"></ul>
+      <div id="player-count" style="font-size:13px;color:var(--text-muted);margin-top:8px;"></div>
+    </div>
+
+    <!-- Tab 内容：盲注表 -->
+    <div id="tab-blinds" class="tab-content">
+      <div class="blind-table-wrap">
+        <table class="blind-table">
+          <thead>
+            <tr>
+              <th>级别</th>
+              <th>小盲</th>
+              <th>大盲</th>
+              <th>Ante</th>
+              <th>时长(分)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="blind-table-body"></tbody>
+        </table>
+      </div>
+      <div class="blind-table-actions">
+        <button class="btn btn-secondary btn-sm" onclick="addBlindLevel()">添加级别</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetBlinds()">重置为默认</button>
+      </div>
+    </div>
+
+    <!-- Tab 内容：蘑菇规则 -->
+    <div id="tab-mushroom" class="tab-content">
+      <div class="form-group">
+        <label>🍄 蘑菇总数（全场共享）</label>
+        <input type="number" id="cfg-mushrooms" value="3" min="0" max="20">
+      </div>
+      <div class="form-group">
+        <label>蘑菇截止级别（0 = 不限）</label>
+        <input type="number" id="cfg-mushroom-cutoff" value="0" min="0">
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">
+        蘑菇复活获得的筹码 = 买入筹码，用完即止。被淘汰的玩家可由管理员手动触发蘑菇复活。
+      </p>
+    </div>
+
+    <!-- Tab 内容：奖池分配 -->
+    <div id="tab-prize" class="tab-content">
+      <div class="prize-options" id="prize-options">
+        <label class="prize-option" data-prize="winner-takes-all">
+          <input type="radio" name="prize-mode" value="winner-takes-all"> 冠军通吃 100%
+        </label>
+        <label class="prize-option" data-prize="top2">
+          <input type="radio" name="prize-mode" value="top2"> 前2名 70/30
+        </label>
+        <label class="prize-option selected" data-prize="top3-50">
+          <input type="radio" name="prize-mode" value="top3-50" checked> 前3名 50/30/20
+        </label>
+        <label class="prize-option" data-prize="top3-60">
+          <input type="radio" name="prize-mode" value="top3-60"> 前3名 60/25/15
+        </label>
+        <label class="prize-option" data-prize="custom">
+          <input type="radio" name="prize-mode" value="custom"> 自定义
+        </label>
+      </div>
+      <div id="custom-prize" class="custom-prize-inputs">
+        <div class="custom-prize-row"><label>第1名</label><input type="number" id="custom-p1" value="50" min="0" max="100">%</div>
+        <div class="custom-prize-row"><label>第2名</label><input type="number" id="custom-p2" value="30" min="0" max="100">%</div>
+        <div class="custom-prize-row"><label>第3名</label><input type="number" id="custom-p3" value="20" min="0" max="100">%</div>
+      </div>
+    </div>
+
+    <!-- 模板卡片 -->
+    <div class="template-cards">
+      <div class="template-card" onclick="loadTemplate('fast')">
+        <h3>快速赛</h3>
+        <p>约1小时 · 8级 × 6分钟<br>买入 10,000</p>
+      </div>
+      <div class="template-card selected" onclick="loadTemplate('standard')">
+        <h3>标准赛</h3>
+        <p>约2小时 · 12级 × 8分钟<br>买入 10,000</p>
+      </div>
+      <div class="template-card" onclick="loadTemplate('deep')">
+        <h3>深筹赛</h3>
+        <p>约3小时 · 15级 × 10分钟<br>买入 20,000</p>
+      </div>
+    </div>
+
+    <!-- 开始比赛 -->
+    <div class="start-btn-wrap">
+      <button class="btn btn-primary btn-lg" onclick="startGame()">▶ 开始比赛</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       V2: 大屏主界面
+       ============================================================ -->
+  <div id="view-game" class="view game-view">
+    <div class="game-main">
+      <!-- 左侧主区域 -->
+      <div class="game-left">
+        <div class="game-top-bar">
+          <div>
+            <div class="game-title" id="game-title">友谊赛</div>
+            <div class="game-level" id="game-level">LEVEL 1</div>
+          </div>
+          <div class="game-elapsed" id="game-elapsed">00:00:00</div>
+        </div>
+        <div class="game-center">
+          <div class="game-blinds" id="game-blinds">
+            <span id="game-sb">100</span>
+            <span class="blind-slash">/</span>
+            <span id="game-bb">200</span>
+          </div>
+          <div class="game-countdown" id="game-countdown">08:00</div>
+          <div class="game-next-level" id="game-next-level">下一级: <span>200 / 400</span></div>
+        </div>
+        <!-- 暂停遮罩 -->
+        <div class="pause-overlay visible" id="pause-overlay">
+          <div class="pause-text">已暂停</div>
+        </div>
+      </div>
+
+      <!-- 右侧信息栏 -->
+      <div class="game-right">
+        <div class="info-item clickable" onclick="openDrawer()">
+          <span class="info-label">剩余玩家</span>
+          <span class="info-value" id="info-players">9</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">平均筹码</span>
+          <span class="info-value" id="info-avg">10,000</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">总筹码</span>
+          <span class="info-value" id="info-total">90,000</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Ante</span>
+          <span class="info-value" id="info-ante">—</span>
+        </div>
+        <div class="prize-preview" id="prize-preview"></div>
+        <div class="info-item">
+          <span class="info-label">🍄 蘑菇</span>
+          <span class="info-value mushroom-display" id="info-mushroom">3/3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 控制栏 -->
+    <div class="game-controls">
+      <button class="ctrl-btn ctrl-play" id="ctrl-pause" onclick="togglePause()">
+        ▶ 开始 <span class="ctrl-key">空格</span>
+      </button>
+      <button class="ctrl-btn" onclick="prevLevel()">
+        ⏮ 上一级 <span class="ctrl-key">←</span>
+      </button>
+      <button class="ctrl-btn" onclick="nextLevel()">
+        ⏭ 下一级 <span class="ctrl-key">→</span>
+      </button>
+      <button class="ctrl-btn" id="ctrl-eliminate" onclick="showEliminateModal()">
+        💀 淘汰 <span class="ctrl-key">D</span>
+      </button>
+      <button class="ctrl-btn" id="ctrl-mushroom" onclick="showMushroomModal()">
+        🍄 蘑菇 <span class="ctrl-key">R</span>
+      </button>
+      <button class="ctrl-btn" id="ctrl-chop" onclick="showChopModal()" disabled>
+        🤝 协商
+      </button>
+      <button class="ctrl-btn" onclick="openSettingsFromGame()">
+        ⚙️ <span class="ctrl-key">S</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 升级闪烁 -->
+  <div class="level-up-flash" id="level-up-flash"></div>
+
+  <!-- ============================================================
+       V3: 玩家抽屉
+       ============================================================ -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h3>玩家列表</h3>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+
+  <!-- ============================================================
+       V4: 模态窗口
+       ============================================================ -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <!-- ============================================================
+       V5: 结算页
+       ============================================================ -->
+  <div id="view-settlement" class="view settlement-view"></div>
+
+  <!-- ============================================================
+       V6: 历史数据页
+       ============================================================ -->
+  <div id="view-history" class="view history-view"></div>
+
+  <!-- Scripts -->
+  <script src="db.js"></script>
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
