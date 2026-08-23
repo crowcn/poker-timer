@@ -44,6 +44,7 @@ function initDB() {
 // ---- 通用事务辅助 ----
 
 function txStore(storeName, mode) {
+  if (!db) throw new Error('IndexedDB 不可用');
   const tx = db.transaction(storeName, mode);
   return tx.objectStore(storeName);
 }
@@ -206,5 +207,5 @@ function downloadJSON(data, filename) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

@@ -32,6 +32,7 @@ const state = {
   running: false,
   warningPlayed: false,
   mushroomsUsed: 0,
+  eliminationSequence: 0,
   events: [],
   tournamentId: null,
   endReason: null,
@@ -63,8 +64,17 @@ function formatShortDuration(seconds) {
 }
 
 function elapsedSeconds() {
-  if (!state.gameStartedAt) return state.elapsedBeforeRun;
-  return state.elapsedBeforeRun + (state.running ? (Date.now() - state.levelStartedAt) / 1000 : 0);
+  if (!state.gameStartedAt) return state.elapsedBeforeRun || 0;
+  const activeSegment = state.running ? (Date.now() - state.levelStartedAt) / 1000 : 0;
+  return (state.elapsedBeforeRun || 0) + activeSegment;
+}
+
+function commitCurrentSegment() {
+  if (!state.running || !state.levelStartedAt) return;
+  const segment = (Date.now() - state.levelStartedAt) / 1000;
+  state.elapsedBeforeRun = (state.elapsedBeforeRun || 0) + segment;
+  state.levelElapsedBeforeRun = (state.levelElapsedBeforeRun || 0) + segment;
+  state.levelStartedAt = Date.now();
 }
 
 function currentLevelElapsedSeconds() {
@@ -271,10 +281,11 @@ function loadTemplate(name) {
 
 async function startGame() {
   readConfig();
+  if (state.config.prizeMode === 'custom' && state.config.customPrize.reduce((sum, ratio) => sum + ratio, 0) !== 100) return alert('自定义奖池比例合计必须为100%');
   if (state.players.length < 2) return alert('至少需要 2 人参赛');
   if (!state.config.blinds.length) return alert('至少需要一个盲注级别');
   state.players.forEach(player => { player.inGame = true; player.eliminatedAt = null; player.eliminatedLevel = null; player.mushroomsUsed = 0; player.eliminationHistory = []; });
-  state.levelIndex = 0; state.elapsedBeforeRun = 0; state.levelElapsedBeforeRun = 0; state.gameStartedAt = Date.now(); state.levelStartedAt = Date.now(); state.running = false; state.warningPlayed = false; state.mushroomsUsed = 0; state.events = [];
+  state.levelIndex = 0; state.elapsedBeforeRun = 0; state.levelElapsedBeforeRun = 0; state.gameStartedAt = Date.now(); state.levelStartedAt = Date.now(); state.running = false; state.warningPlayed = false; state.mushroomsUsed = 0; state.eliminationSequence = 0; state.events = [];
   state.tournamentId = await generateTournamentId().catch(() => `local-${Date.now()}`);
   state.view = 'game';
   addEvent('start', `比赛开始，${state.players.length}人参赛`);
@@ -342,8 +353,11 @@ function togglePause() {
 }
 
 function advanceLevel(automatic = false) {
+  if (state.running) commitCurrentSegment();
   if (state.levelIndex < 1000000) state.levelIndex += 1;
-  state.levelElapsedBeforeRun = 0; state.levelStartedAt = Date.now(); state.warningPlayed = false;
+  state.levelElapsedBeforeRun = 0;
+  state.levelStartedAt = state.running ? Date.now() : 0;
+  state.warningPlayed = false;
   if (automatic) { addEvent('level-up', `升级至 ${levelLabel()}`); playLevelUp(); }
   const flash = document.getElementById('level-up-flash');
   flash.classList.remove('visible'); void flash.offsetWidth; flash.classList.add('visible');
@@ -353,11 +367,20 @@ function advanceLevel(automatic = false) {
 function nextLevel() { if (state.view === 'game') advanceLevel(false); }
 function prevLevel() {
   if (state.levelIndex <= 0) return;
-  state.levelIndex -= 1; state.levelElapsedBeforeRun = 0; state.levelStartedAt = Date.now(); state.warningPlayed = false; addEvent('level-down', `返回 ${levelLabel()}`); updateGameDisplay(); persistProgress();
+  if (state.running) commitCurrentSegment();
+  state.levelIndex -= 1;
+  state.levelElapsedBeforeRun = 0;
+  state.levelStartedAt = state.running ? Date.now() : 0;
+  state.warningPlayed = false;
+  addEvent('level-down', `返回 ${levelLabel()}`); updateGameDisplay(); persistProgress();
 }
 
 function showEliminateModal() { openPlayerActionModal('eliminate'); }
-function showMushroomModal() { openPlayerActionModal('mushroom'); }
+function showMushroomModal() {
+  if (state.mushroomsUsed >= state.config.mushrooms) return alert('蘑菇已用完');
+  if (state.config.mushroomCutoff && state.levelIndex + 1 > state.config.mushroomCutoff) return alert('已超过蘑菇截止级别');
+  openPlayerActionModal('mushroom');
+}
 
 function canUseMushroom() {
   return state.mushroomsUsed < state.config.mushrooms && (!state.config.mushroomCutoff || state.levelIndex + 1 <= state.config.mushroomCutoff) && state.players.some(player => !player.inGame);
@@ -370,7 +393,7 @@ function openPlayerActionModal(action) {
   modalAction = { type: action, phone: candidates[0].phoneLastFour };
   const title = action === 'eliminate' ? '💀 确认淘汰' : '🍄 蘑菇复活';
   const button = action === 'eliminate' ? '确认淘汰' : '确认复活';
-  const rows = candidates.map(player => `<li class="modal-player-item ${player.phoneLastFour === modalAction.phone ? 'selected' : ''}" onclick="selectModalPlayer('${player.phoneLastFour}')"><span>${action === 'eliminate' ? '🟢' : '⚫'}</span><b>${escapeHTML(player.nickname)}</b><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span></li>`).join('');
+  const rows = candidates.map(player => `<li class="modal-player-item ${player.phoneLastFour === modalAction.phone ? 'selected' : ''}" data-phone="${escapeHTML(player.phoneLastFour)}" onclick="selectModalPlayer('${player.phoneLastFour}')"><span>${action === 'eliminate' ? '🟢' : '⚫'}</span><b>${escapeHTML(player.nickname)}</b><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span></li>`).join('');
   document.getElementById('modal-content').innerHTML = `<div class="modal-header">${title}</div><div class="modal-body"><ul class="modal-player-list">${rows}</ul><p class="modal-info" id="modal-action-info"></p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn ${action === 'eliminate' ? 'btn-danger' : 'btn-primary'}" onclick="confirmPlayerAction()">${button}</button></div>`;
   document.getElementById('modal-overlay').classList.add('visible'); updateModalInfo();
 }
@@ -379,7 +402,7 @@ function selectModalPlayer(phone) {
   if (!modalAction) return;
   modalAction.phone = phone;
   document.querySelectorAll('.modal-player-item').forEach(item => {
-    const selected = item.querySelector('.player-phone')?.textContent.includes(`(${phone})`);
+    const selected = item.dataset.phone === phone;
     item.classList.toggle('selected', selected);
   });
   updateModalInfo();
@@ -394,7 +417,8 @@ function confirmPlayerAction() {
   const player = state.players.find(item => item.phoneLastFour === modalAction?.phone);
   if (!player) return;
   if (modalAction.type === 'eliminate') {
-    player.inGame = false; player.eliminatedAt = Math.floor(elapsedSeconds()); player.eliminatedLevel = state.levelIndex + 1; player.eliminationHistory.push({ time: player.eliminatedAt, level: state.levelIndex + 1 });
+    player.eliminationHistory = player.eliminationHistory || [];
+    player.inGame = false; player.eliminatedAt = Math.floor(elapsedSeconds()); player.eliminatedLevel = state.levelIndex + 1; player.eliminationSequence = ++state.eliminationSequence; player.eliminationHistory.push({ time: player.eliminatedAt, level: state.levelIndex + 1, sequence: player.eliminationSequence });
     addEvent('eliminate', `${player.nickname}(${player.phoneLastFour}) 淘汰`);
     closeModal(); renderDrawer(); updateGameDisplay();
     if (inGamePlayers().length === 1) finishGame('natural');
@@ -434,17 +458,36 @@ function showChopModal() {
 function updateChopTable() {
   const method = document.querySelector('input[name="chop-method"]:checked')?.value || 'equal';
   const players = inGamePlayers(); const pool = totalChips(); const each = players.length ? Math.floor(pool / players.length) : 0;
+  if (method === 'ratio' && document.querySelector('.chop-current:not([readonly])')) {
+    const currents = Array.from(document.querySelectorAll('.chop-current')).map(input => Math.max(0, Number(input.value) || 0));
+    const currentTotal = currents.reduce((sum, value) => sum + value, 0);
+    document.querySelectorAll('.chop-prize').forEach((input, index) => { input.value = currentTotal ? Math.floor(pool * currents[index] / currentTotal) : 0; });
+    return;
+  }
+  const previousCurrent = new Map(Array.from(document.querySelectorAll('.chop-current')).map(input => [input.dataset.phone, input.value]));
+  const previousPrize = new Map(Array.from(document.querySelectorAll('.chop-prize')).map(input => [input.dataset.phone, input.value]));
   const body = document.getElementById('chop-body'); if (!body) return;
-  body.innerHTML = players.map((player, i) => `<tr><td>${escapeHTML(player.nickname)}</td><td>${formatNumber(state.config.buyin)}</td><td><input class="chop-prize" data-phone="${player.phoneLastFour}" type="number" min="0" value="${method === 'equal' ? each : method === 'ratio' ? Math.floor(pool / players.length) : each}" ${method === 'custom' ? '' : 'readonly'}></td></tr>`).join('');
+  body.innerHTML = players.map(player => `<tr><td>${escapeHTML(player.nickname)}</td><td><input class="chop-current" data-phone="${player.phoneLastFour}" type="number" min="0" value="${previousCurrent.get(player.phoneLastFour) ?? state.config.buyin}" ${method === 'ratio' ? '' : 'readonly'} oninput="updateChopTable()"></td><td><input class="chop-prize" data-phone="${player.phoneLastFour}" type="number" min="0" value="${previousPrize.get(player.phoneLastFour) ?? each}" ${method === 'custom' ? '' : 'readonly'}></td></tr>`).join('');
+  if (method === 'ratio') {
+    const currents = Array.from(document.querySelectorAll('.chop-current')).map(input => Math.max(0, Number(input.value) || 0));
+    const currentTotal = currents.reduce((sum, value) => sum + value, 0);
+    document.querySelectorAll('.chop-prize').forEach((input, index) => { input.value = currentTotal ? Math.floor(pool * currents[index] / currentTotal) : 0; });
+  } else if (method === 'equal') {
+    document.querySelectorAll('.chop-prize').forEach(input => { input.value = each; });
+  }
 }
 function confirmChop() {
   const prizes = {}; document.querySelectorAll('.chop-prize').forEach(input => { prizes[input.dataset.phone] = Math.max(0, Number(input.value) || 0); });
+  const total = Object.values(prizes).reduce((sum, value) => sum + value, 0);
+  if (total !== totalChips()) return alert(`分配合计必须等于奖池 ${formatNumber(totalChips())}`);
   state.settlement = { prizes }; state.endReason = 'chop'; addEvent('chop', '协商结束比赛'); closeModal(); finishGame('chop');
 }
 
 function finishGame(reason) {
   if (state.view === 'settlement') return;
-  state.running = false; state.elapsedBeforeRun = elapsedSeconds(); state.levelElapsedBeforeRun = currentLevelElapsedSeconds(); state.levelStartedAt = 0; state.endReason = reason;
+  const finalElapsed = elapsedSeconds();
+  const finalLevelElapsed = currentLevelElapsedSeconds();
+  state.running = false; state.elapsedBeforeRun = finalElapsed; state.levelElapsedBeforeRun = finalLevelElapsed; state.levelStartedAt = 0; state.endReason = reason;
   if (!state.settlement) state.settlement = { prizes: calculateNaturalPrizes() };
   const rankings = buildRankings();
   const tournament = { id: state.tournamentId, name: state.config.name, date: new Date().toISOString(), config: JSON.parse(JSON.stringify(state.config)), totalPrizePool: totalChips(), durationMinutes: state.elapsedBeforeRun / 60, finalLevel: state.levelIndex + 1, mushroomsUsed: state.mushroomsUsed, endReason: reason, events: state.events, rankings };
@@ -454,14 +497,16 @@ function finishGame(reason) {
 
 function buildRankings() {
   const active = state.players.filter(player => player.inGame);
-  const eliminated = state.players.filter(player => !player.inGame).sort((a, b) => (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0));
-  const ordered = state.endReason === 'chop' ? [...active, ...eliminated] : [...active, ...eliminated];
+  const eliminated = state.players.filter(player => !player.inGame).sort((a, b) => (b.eliminationSequence || 0) - (a.eliminationSequence || 0));
+  const ordered = [...active, ...eliminated];
   const prizes = state.settlement?.prizes || {};
-  return ordered.map((player, index) => ({ ...player, rank: index + 1, prizeChips: prizes[player.phoneLastFour] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedLevel: player.inGame ? null : player.eliminatedLevel }));
+  return ordered.map((player, index) => ({ ...player, rank: index + 1, prizeChips: prizes[player.phoneLastFour] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedAtLevel: player.inGame ? null : player.eliminatedLevel }));
 }
 function calculateNaturalPrizes() {
+  const rankings = buildRankings();
   const ratios = state.config.prizeMode === 'custom' ? state.config.customPrize : (PRIZE_RATIOS[state.config.prizeMode] || PRIZE_RATIOS['top3-50']);
-  const prizes = {}; ratios.forEach((ratio, index) => { const player = state.players.filter(item => item.inGame).sort((a, b) => a.nickname.localeCompare(b.nickname))[index]; if (player) prizes[player.phoneLastFour] = Math.floor(totalChips() * ratio / 100); });
+  const prizes = {};
+  ratios.forEach((ratio, index) => { const player = rankings[index]; if (player) prizes[player.phoneLastFour] = Math.floor(totalChips() * ratio / 100); });
   return prizes;
 }
 function renderPrizePreview() {
@@ -475,8 +520,24 @@ function renderSettlement(tournament, rankings) {
   view.innerHTML = `<div class="settlement-header"><div class="trophy">🏆</div><h2>比赛结束</h2><p>${escapeHTML(tournament.name)} · ${new Date(tournament.date).toLocaleDateString('zh-CN')}</p></div><div class="settlement-body"><div class="settlement-left"><div class="stat-card"><table class="rank-table"><thead><tr><th>排名</th><th>玩家</th><th>淘汰时间</th><th>奖励筹码</th></tr></thead><tbody id="rankings-body">${rankings.map(item => settlementRow(item)).join('')}</tbody></table></div><div class="event-log"><h4>事件日志</h4>${state.events.map(event => `<div class="event-entry"><span class="event-time">[${formatShortDuration(event.time)}]</span> ${escapeHTML(event.detail)}</div>`).join('')}</div></div><div class="settlement-right"><div class="stat-card"><div class="stat-label">比赛时长</div><div class="stat-value">${formatDuration(tournament.durationMinutes * 60)}</div></div><div class="stat-card"><div class="stat-label">经过级别</div><div class="stat-value">${tournament.finalLevel}</div></div><div class="stat-card"><div class="stat-label">蘑菇使用</div><div class="stat-value">${tournament.mushroomsUsed}/${state.config.mushrooms}</div></div><div class="stat-card"><div class="stat-label">总筹码池</div><div class="stat-value">${formatNumber(tournament.totalPrizePool)}</div></div><div class="settlement-actions"><button class="btn btn-secondary" onclick="exportCurrentTournament()">导出 JSON</button><button class="btn btn-secondary" onclick="showHistory()">查看排行榜</button><button class="btn btn-primary" onclick="newGame()">开始新比赛</button></div></div></div>`;
 }
 function settlementRow(item) { const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank; return `<tr><td class="rank-medal">${medal}</td><td>${escapeHTML(item.nickname)} <small>(${escapeHTML(item.phoneLastFour)})</small></td><td>${item.eliminatedAt == null ? '冠军/协商' : formatShortDuration(item.eliminatedAt)}</td><td class="rank-prize"><input type="number" min="0" value="${item.prizeChips}" onchange="changePrize('${item.phoneLastFour}', this.value)"></td></tr>`; }
-function changePrize(phone, value) { if (state.settlement) state.settlement.prizes[phone] = Math.max(0, Number(value) || 0); }
-function newGame() { clearProgress(); state.players.forEach(player => { player.inGame = true; }); state.view = 'setup'; renderPlayers(); showView('setup'); }
+async function changePrize(phone, value) {
+  if (!state.settlement) return;
+  state.settlement.prizes[phone] = Math.max(0, Number(value) || 0);
+  if (state.tournamentId) {
+    const tournament = await getTournament(state.tournamentId).catch(() => null);
+    if (!tournament?.rankings) return;
+    const item = tournament.rankings.find(row => row.phoneLastFour === phone);
+    if (item) item.prizeChips = state.settlement.prizes[phone];
+    await addTournament(tournament).catch(() => {});
+    await addParticipations(tournament.rankings.map(row => ({ tournamentId: tournament.id, phoneLastFour: row.phoneLastFour, finalRank: row.rank, eliminatedAt: row.eliminatedAt, eliminatedAtLevel: row.eliminatedLevel, mushroomsUsed: row.mushroomsUsed, prizeChips: row.prizeChips }))).catch(() => {});
+  }
+}
+function newGame() {
+  clearProgress();
+  state.players.forEach(player => { player.inGame = true; player.eliminatedAt = null; player.eliminatedLevel = null; player.eliminationSequence = 0; player.eliminationHistory = []; player.mushroomsUsed = 0; });
+  state.levelIndex = 0; state.levelStartedAt = 0; state.levelElapsedBeforeRun = 0; state.elapsedBeforeRun = 0; state.gameStartedAt = 0; state.running = false; state.warningPlayed = false; state.mushroomsUsed = 0; state.eliminationSequence = 0; state.events = []; state.tournamentId = null; state.endReason = null; state.settlement = null;
+  state.view = 'setup'; renderPlayers(); showView('setup'); updateGameDisplay();
+}
 async function exportCurrentTournament() { const data = await getTournament(state.tournamentId).catch(() => null); downloadJSON(data || state, `poker-timer-${state.tournamentId || 'backup'}.json`); }
 
 async function showHistory() {
@@ -508,7 +569,14 @@ function restorePrompt() {
   document.getElementById('modal-overlay').classList.add('visible'); window.pendingProgress = progress;
 }
 function discardRecovery() { clearProgress(); closeModal(); }
-function restoreGame() { Object.assign(state, window.pendingProgress); state.running = false; state.levelStartedAt = 0; state.levelElapsedBeforeRun = state.levelElapsedBeforeRun || 0; closeModal(); showView('game'); startTicker(); updateGameDisplay(); }
+function restoreGame() {
+  Object.assign(state, window.pendingProgress);
+  state.levelElapsedBeforeRun = state.levelElapsedBeforeRun || 0;
+  state.eliminationSequence = state.eliminationSequence || 0;
+  state.events = state.events || [];
+  state.players = (state.players || []).map(player => ({ ...player, inGame: player.inGame !== false, mushroomsUsed: player.mushroomsUsed || 0, eliminationHistory: player.eliminationHistory || [], eliminationSequence: player.eliminationSequence || 0 }));
+  state.running = false; state.levelStartedAt = 0; closeModal(); showView('game'); startTicker(); updateGameDisplay();
+}
 
 window.addEventListener('keydown', event => {
   if (event.target.matches('input, textarea, select')) return;
