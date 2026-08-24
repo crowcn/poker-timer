@@ -865,6 +865,10 @@ html, body {
   text-align: right;
   font-size: 14px;
 }
+.chop-table .chop-rank {
+  width: 56px;
+  text-align: center;
+}
 .chop-table .chop-result {
   font-family: var(--font-mono);
   font-weight: 600;
@@ -884,6 +888,19 @@ html, body {
   text-align: center;
   padding: 8px 0;
 }
+.settings-summary {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin: 12px 0;
+  text-align: left;
+}
+.settings-summary p {
+  font-size: 14px;
+  padding: 4px 0;
+  color: var(--text-secondary);
+}
+.settings-events { margin-top: 12px; }
 
 /* ============================================================
    V5: 结算页
@@ -1017,6 +1034,29 @@ html, body {
 }
 .history-header h2 { font-size: 22px; flex: 1; text-align: center; }
 
+/* 历史页顶层 Tab */
+.history-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+.history-tab {
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.history-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 /* 排行榜 */
 .leaderboard-tabs {
   display: flex;
@@ -1124,6 +1164,11 @@ html, body {
   border-radius: var(--radius-lg);
   padding: 20px;
 }
+.recent-games-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 16px 0 8px;
+}
 .player-stats-card h3 {
   font-size: 20px;
   margin-bottom: 16px;
@@ -1227,7 +1272,13 @@ html, body {
     padding: 6px 8px;
     border-bottom: none;
   }
-  .prize-preview { display: none; }
+  .prize-preview {
+    width: 100%;
+    margin-top: 0;
+    padding: 8px 12px;
+  }
+  .prize-preview h4 { display: none; }
+  .prize-row { font-size: 12px; padding: 2px 0; }
   .game-blinds { font-size: 36px; }
   .game-countdown { font-size: 48px; letter-spacing: 2px; }
   .game-level { font-size: 20px; }
