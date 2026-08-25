@@ -22,8 +22,9 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.2</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.3</span></h1>
       <div class="header-actions">
+        <button class="btn btn-ghost sound-toggle" onclick="toggleSound()">🔊</button>
         <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
         <button class="btn btn-ghost" onclick="showImportExport()">导入/导出</button>
@@ -238,6 +239,7 @@
       <button class="ctrl-btn" id="ctrl-end" onclick="showEndMenu()">
         🏁 结束
       </button>
+      <button class="ctrl-btn sound-toggle" onclick="toggleSound()">🔊</button>
       <button class="ctrl-btn" onclick="openSettingsFromGame()">
         ⚙️ <span class="ctrl-key">S</span>
       </button>

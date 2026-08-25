@@ -864,5 +864,6 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('DOMContentLoaded', async () => {
   try { await initDB(); } catch (error) { console.warn('IndexedDB 不可用，将仅使用当前页面数据:', error); }
   initSetup();
+  refreshSoundToggles();
   restorePrompt();
 });

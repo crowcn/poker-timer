@@ -3,6 +3,26 @@
 // ============================================================
 
 let audioCtx = null;
+const SOUND_KEY = 'poker-timer-sound';
+let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'off';
+
+// 音效开关：随时关闭 / 打开（记忆到 localStorage）
+function isSoundEnabled() {
+  return soundEnabled;
+}
+
+function refreshSoundToggles() {
+  document.querySelectorAll('.sound-toggle').forEach((btn) => {
+    btn.textContent = soundEnabled ? '🔊' : '🔇';
+    btn.dataset.state = soundEnabled ? 'on' : 'off';
+  });
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem(SOUND_KEY, soundEnabled ? 'on' : 'off');
+  refreshSoundToggles();
+}
 
 // 懒初始化 AudioContext（需要用户交互后才能创建）
 function getAudioContext() {
@@ -18,6 +38,7 @@ function getAudioContext() {
 // ---- 级别升级音效（钟声，双音叠加） ----
 
 function playLevelUp() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
@@ -65,6 +86,7 @@ function playLevelUp() {
 // ---- 30秒警告音（短促双声） ----
 
 function playWarning() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
@@ -100,6 +122,7 @@ function playWarning() {
 // ---- 比赛结束音效 ----
 
 function playGameEnd() {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
