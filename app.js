@@ -346,8 +346,8 @@ async function createNewPlayer() {
   const nicknameInput = document.getElementById('add-player-nickname');
   const phone = search?.value.trim() || '';
   const nickname = nicknameInput?.value.trim() || '';
-  if (!/^\d{4}$/.test(phone)) return alert('请输入4位手机尾号');
-  if (!nickname) return alert('请输入昵称');
+  if (!/^\d{4}$/.test(phone)) return toast('请输入4位手机尾号');
+  if (!nickname) return toast('请输入昵称');
   const { allPlayers, selected } = window.addPlayersData;
   const existing = await getPlayersByPhone(phone).catch(() => []);
   let id;
@@ -382,7 +382,7 @@ async function confirmAddPlayers() {
   }
   closeModal();
   renderPlayers();
-  if (!added) alert('没有新添加的玩家');
+  if (!added) toast('没有新添加的玩家');
 }
 
 function removeSetupPlayer(index) {
@@ -399,11 +399,13 @@ function loadTemplate(name) {
   const template = templates[name];
   if (!template) return;
   const labels = { fast: '快速赛', standard: '标准赛', deep: '深筹赛' };
-  if (!confirm(`加载${labels[name]}将覆盖买入筹码和盲注表，确认继续吗？`)) return;
-  state.config.buyin = template.buyin;
-  state.config.blinds = cloneBlinds(template.blinds);
-  syncConfigInputs(); renderBlindTable();
-  document.querySelectorAll('.template-card').forEach(card => card.classList.toggle('selected', card.querySelector('h3').textContent.includes(labels[name])));
+  const applyTemplate = () => {
+    state.config.buyin = template.buyin;
+    state.config.blinds = cloneBlinds(template.blinds);
+    syncConfigInputs(); renderBlindTable();
+    document.querySelectorAll('.template-card').forEach(card => card.classList.toggle('selected', card.querySelector('h3').textContent.includes(labels[name])));
+  };
+  showConfirm({ title: '加载模板', message: `加载${labels[name]}将覆盖买入筹码和盲注表，确认继续吗？`, confirmText: '继续', onConfirm: applyTemplate });
 }
 
 // ---- 屏幕常亮（Wake Lock）：计时期间阻止移动设备息屏 ----
@@ -427,9 +429,9 @@ async function releaseWakeLock() {
 
 async function startGame() {
   readConfig();
-  if (state.config.prizeMode === 'custom' && state.config.customPrize.reduce((sum, ratio) => sum + ratio, 0) !== 100) return alert('自定义奖池比例合计必须为100%');
-  if (state.players.length < 2) return alert('至少需要 2 人参赛');
-  if (!state.config.blinds.length) return alert('至少需要一个盲注级别');
+  if (state.config.prizeMode === 'custom' && state.config.customPrize.reduce((sum, ratio) => sum + ratio, 0) !== 100) return toast('自定义奖池比例合计必须为100%');
+  if (state.players.length < 2) return toast('至少需要 2 人参赛');
+  if (!state.config.blinds.length) return toast('至少需要一个盲注级别');
   state.players.forEach(player => { player.inGame = true; player.eliminatedAt = null; player.eliminatedLevel = null; player.mushroomsUsed = 0; player.eliminationHistory = []; player.rebuySnapshot = null; });
   state.levelIndex = 0; state.elapsedBeforeRun = 0; state.levelElapsedBeforeRun = 0; state.gameStartedAt = Date.now(); state.levelStartedAt = Date.now(); state.running = false; state.warningPlayed = false; state.mushroomsUsed = 0; state.eliminationSequence = 0; state.events = [];
   state.tournamentId = await generateTournamentId().catch(() => `local-${Date.now()}`);
@@ -531,8 +533,8 @@ function prevLevel() {
 
 function showEliminateModal() { openPlayerActionModal('eliminate'); }
 function showMushroomModal() {
-  if (state.mushroomsUsed >= state.config.mushrooms) return alert('蘑菇已用完');
-  if (state.config.mushroomCutoff && state.levelIndex + 1 > state.config.mushroomCutoff) return alert('已超过蘑菇截止级别');
+  if (state.mushroomsUsed >= state.config.mushrooms) return toast('蘑菇已用完');
+  if (state.config.mushroomCutoff && state.levelIndex + 1 > state.config.mushroomCutoff) return toast('已超过蘑菇截止级别');
   openPlayerActionModal('mushroom');
 }
 
@@ -542,8 +544,8 @@ function canUseMushroom() {
 
 function openPlayerActionModal(action) {
   const candidates = state.players.filter(player => action === 'eliminate' ? player.inGame : !player.inGame);
-  if (!candidates.length) return alert(action === 'eliminate' ? '当前没有在场玩家' : '当前没有可复活的已淘汰玩家');
-  if (action === 'mushroom' && !canUseMushroom()) return alert('当前无法使用蘑菇');
+  if (!candidates.length) return toast(action === 'eliminate' ? '当前没有在场玩家' : '当前没有可复活的已淘汰玩家');
+  if (action === 'mushroom' && !canUseMushroom()) return toast('当前无法使用蘑菇');
   modalAction = { type: action, id: candidates[0].id };
   const title = action === 'eliminate' ? '💀 确认淘汰' : '🍄 蘑菇复活';
   const button = action === 'eliminate' ? '确认淘汰' : '确认复活';
@@ -670,10 +672,14 @@ function confirmChop() {
   document.querySelectorAll('.chop-prize').forEach(input => { prizes[input.dataset.id] = Math.max(0, Number(input.value) || 0); });
   document.querySelectorAll('.chop-rank').forEach(input => { chopRanks[input.dataset.id] = Number(input.value); });
   const ranks = Object.values(chopRanks); const activeCount = inGamePlayers().length;
-  if (ranks.length !== activeCount || new Set(ranks).size !== activeCount || ranks.some(rank => !Number.isInteger(rank) || rank < 1 || rank > activeCount)) return alert(`请为 ${activeCount} 名协商玩家填写不重复的最终名次`);
+  if (ranks.length !== activeCount || new Set(ranks).size !== activeCount || ranks.some(rank => !Number.isInteger(rank) || rank < 1 || rank > activeCount)) return toast(`请为 ${activeCount} 名协商玩家填写不重复的最终名次`);
   const total = Object.values(prizes).reduce((sum, value) => sum + value, 0);
-  if (total !== totalChips() && !confirm(`分配合计 ${formatNumber(total)} 与奖池参考 ${formatNumber(totalChips())} 不一致，仍要结束比赛吗？`)) return;
-  state.settlement = { prizes, chopRanks }; state.endReason = 'chop'; addEvent('chop', '协商结束比赛'); closeModal(); finishGame('chop');
+  const requestChop = () => { state.settlement = { prizes, chopRanks }; state.endReason = 'chop'; addEvent('chop', '协商结束比赛'); closeModal(); finishGame('chop'); };
+  if (total !== totalChips()) {
+    showConfirm({ title: '结束比赛', message: `分配合计 ${formatNumber(total)} 与奖池参考 ${formatNumber(totalChips())} 不一致，仍要结束比赛吗？`, confirmText: '结束', danger: true, onConfirm: requestChop });
+  } else {
+    requestChop();
+  }
 }
 
 function finishGame(reason) {
@@ -748,7 +754,7 @@ async function exportCurrentTournament() { const data = await getTournament(stat
 
 function showImportExport() { document.getElementById('modal-content').innerHTML = `<div class="modal-header">导入 / 导出数据</div><div class="modal-body"><p class="modal-info">导出全部玩家、比赛和参赛记录，或从 JSON 备份恢复。</p><input type="file" id="import-file" accept="application/json"></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-secondary" onclick="exportAll()">导出全部数据</button><button class="btn btn-primary" onclick="importFile()">导入</button></div>`; document.getElementById('modal-overlay').classList.add('visible'); }
 async function exportAll() { const data = await exportAllData(); downloadJSON(data, `poker-timer-backup-${new Date().toISOString().slice(0, 10)}.json`); closeModal(); }
-async function importFile() { const file = document.getElementById('import-file').files[0]; if (!file) return alert('请选择 JSON 文件'); try { await importAllData(JSON.parse(await file.text())); closeModal(); alert('导入成功'); } catch (error) { alert(`导入失败：${error.message}`); } }
+async function importFile() { const file = document.getElementById('import-file').files[0]; if (!file) return toast('请选择 JSON 文件'); try { await importAllData(JSON.parse(await file.text())); closeModal(); toast('导入成功'); } catch (error) { toast(`导入失败：${error.message}`, 'error'); } }
 function openSettingsFromGame() {
   if (state.running) {
     state.elapsedBeforeRun = elapsedSeconds();
@@ -762,6 +768,30 @@ function openSettingsFromGame() {
   document.getElementById('modal-overlay').classList.add('visible');
 }
 function escapeHTML(value) { return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
+
+// ---- 深色 Toast 提示（替代原生 alert） ----
+function toast(message, type = 'default') {
+  const container = document.getElementById('toast-container');
+  if (!container) { console.warn('[toast] missing container', message); return; }
+  const el = document.createElement('div');
+  el.className = `toast${type === 'error' ? ' error' : ''}`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(() => el.remove(), 200);
+  }, 2500);
+}
+
+// ---- 深色确认模态（替代原生 confirm） ----
+function showConfirm({ title = '确认', message, confirmText = '确定', cancelText = '取消', danger = false, onConfirm }) {
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `<div class="modal-header">${escapeHTML(title)}</div><div class="modal-body"><p>${message}</p></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${escapeHTML(cancelText)}</button><button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="confirm-ok">${escapeHTML(confirmText)}</button></div>`;
+  document.getElementById('modal-overlay').classList.add('visible');
+  document.getElementById('confirm-ok').onclick = () => { closeModal(); if (typeof onConfirm === 'function') onConfirm(); };
+}
 
 function restorePrompt() {
   const progress = loadProgress(); if (!progress) return;

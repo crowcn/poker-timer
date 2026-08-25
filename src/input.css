@@ -1438,6 +1438,37 @@
   .empty-state p {
     font-size: 0.875rem;
   }
+
+  /* ---- Toast 提示 ---- */
+  .toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+  .toast {
+    padding: 0.625rem 1.125rem;
+    background: var(--color-popover);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px oklch(0 0 0 / 0.45);
+    animation: toastIn 0.2s ease;
+    white-space: nowrap;
+    max-width: 80vw;
+  }
+  .toast.error {
+    border-color: var(--color-destructive);
+    color: var(--color-destructive);
+  }
 }
 
 /* ---- 动画 ---- */
@@ -1474,6 +1505,16 @@
   }
   50% {
     opacity: 0.4;
+  }
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

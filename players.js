@@ -169,8 +169,8 @@ function showPlayerEdit(id) {
 async function savePlayerEdit(id) {
   const nickname = document.getElementById('edit-nickname')?.value.trim() || '';
   const phone = document.getElementById('edit-phone')?.value.trim() || '';
-  if (!nickname) { alert('请输入昵称'); return; }
-  if (!/^\d{4}$/.test(phone)) { alert('请输入 4 位手机尾号'); return; }
+  if (!nickname) { toast('请输入昵称'); return; }
+  if (!/^\d{4}$/.test(phone)) { toast('请输入 4 位手机尾号'); return; }
   const { players } = window.playersData || { players: [] };
   const player = players.find(p => p.id === id);
   if (!player) return;
