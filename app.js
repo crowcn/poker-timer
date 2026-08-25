@@ -454,9 +454,16 @@ function updateGameDisplay() {
   document.getElementById('game-bb').textContent = formatNumber(level.bb);
   document.getElementById('game-countdown').textContent = formatShortDuration(remaining);
   document.getElementById('game-countdown').classList.toggle('warning', remaining <= 30 && state.running);
+  const ring = document.getElementById('ring-progress');
+  if (ring) {
+    const circumference = 2 * Math.PI * 54;
+    const total = currentLevelDuration();
+    ring.style.strokeDasharray = `${circumference}`;
+    ring.style.strokeDashoffset = `${circumference * (1 - (total ? remaining / total : 0))}`;
+  }
   document.getElementById('game-elapsed').textContent = formatDuration(elapsedSeconds());
   const next = currentLevelAt(state.levelIndex + 1);
-  document.querySelector('#game-next-level span').textContent = `${formatNumber(next.sb)} / ${formatNumber(next.bb)}`;
+  document.getElementById('next-blinds').textContent = `${formatNumber(next.sb)} / ${formatNumber(next.bb)}`;
   const active = inGamePlayers().length;
   document.getElementById('info-players').textContent = active;
   document.getElementById('info-total').textContent = formatNumber(totalChips());
@@ -466,7 +473,6 @@ function updateGameDisplay() {
   document.getElementById('ctrl-pause').innerHTML = state.running ? '⏸ 暂停 <span class="ctrl-key">空格</span>' : '▶ 开始 <span class="ctrl-key">空格</span>';
   document.getElementById('pause-overlay').classList.toggle('visible', !state.running);
   document.getElementById('ctrl-mushroom').disabled = !canUseMushroom();
-  document.getElementById('ctrl-chop').disabled = active > 3;
   renderPrizePreview();
   if (state.running && remaining <= 30 && remaining > 0 && !state.warningPlayed) { playWarning(); state.warningPlayed = true; }
   if (state.running && remaining <= 0) advanceLevel(true);
@@ -606,6 +612,29 @@ function undoMushroom(id) {
   player.mushroomsUsed = Math.max(0, player.mushroomsUsed - 1); state.mushroomsUsed = Math.max(0, state.mushroomsUsed - 1); player.rebuySnapshot = null;
   addEvent('mushroom-undo', `${player.nickname}(${player.phoneLastFour}) 撤销蘑菇复活 🍄（剩余${state.config.mushrooms - state.mushroomsUsed}/${state.config.mushrooms}）`);
   renderDrawer(); updateGameDisplay(); persistProgress();
+}
+
+// 「结束」入口：弹出菜单，可选「协商结束」或「取消比赛」
+function showEndMenu() {
+  const activeCount = inGamePlayers().length;
+  const canChop = activeCount >= 2 && activeCount <= 3;
+  const chopDisabled = canChop ? '' : 'disabled';
+  document.getElementById('modal-content').innerHTML = `<div class="modal-header">🏁 结束比赛</div><div class="modal-body"><div class="end-menu"><button class="btn btn-secondary" onclick="showChopModal()" ${chopDisabled}>🤝 协商结束<span class="end-hint">${canChop ? '分奖池' : '仅剩 2-3 人可用'}</span></button><button class="btn btn-danger" onclick="showCancelConfirm()">✕ 取消比赛<span class="end-hint">不分配奖池</span></button></div><p class="modal-info">协商结束会按当前排名/比例分配奖池并计入历史；取消比赛则不分配、不计入历史，回到配置页。</p></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">返回</button></div>`;
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+// 取消比赛确认
+function showCancelConfirm() {
+  document.getElementById('modal-content').innerHTML = `<div class="modal-header">取消比赛</div><div class="modal-body"><p>确定要取消这场比赛？</p><p class="modal-info">取消后不分配奖池、不计入历史记录，对玩家数据无影响。比赛将从配置页重新开始。</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="showEndMenu()">返回</button><button class="btn btn-danger" onclick="cancelGame()">确认取消比赛</button></div>`;
+}
+
+// 取消比赛：清空比赛状态，不写历史，回到配置页
+function cancelGame() {
+  releaseWakeLock();
+  clearProgress();
+  state.players.forEach(player => { player.inGame = true; player.eliminatedAt = null; player.eliminatedLevel = null; player.eliminationSequence = 0; player.eliminationHistory = []; player.mushroomsUsed = 0; });
+  state.levelIndex = 0; state.levelStartedAt = 0; state.levelElapsedBeforeRun = 0; state.elapsedBeforeRun = 0; state.gameStartedAt = 0; state.running = false; state.warningPlayed = false; state.mushroomsUsed = 0; state.eliminationSequence = 0; state.events = []; state.tournamentId = null; state.endReason = null; state.settlement = null; state.view = 'setup';
+  closeModal(); renderPlayers(); showView('setup'); updateGameDisplay();
 }
 
 function showChopModal() {

@@ -1,212 +1,54 @@
-/*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
-@layer properties;
-@layer theme, base, components, utilities;
-@layer theme {
-  :root, :host {
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-    --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --default-font-family: var(--font-sans);
-    --default-mono-font-family: var(--font-mono);
-    --color-background: oklch(0.13 0 0);
-    --color-foreground: oklch(0.96 0 0);
-    --color-card: oklch(0.17 0 0);
-    --color-primary: oklch(0.96 0 0);
-    --color-primary-foreground: oklch(0.13 0 0);
-    --color-secondary: oklch(0.2 0 0);
-    --color-secondary-foreground: oklch(0.96 0 0);
-    --color-muted-foreground: oklch(0.58 0 0);
-    --color-accent: oklch(0.23 0 0);
-    --color-destructive: oklch(0.58 0.19 25);
-    --color-destructive-foreground: oklch(0.96 0 0);
-    --color-border: oklch(0.27 0 0);
-    --color-input: oklch(0.27 0 0);
-  }
+/* ============================================================
+   input.css — Tailwind CSS v4 输入文件
+   构建产物输出到根目录 style.css（被 index.html 引用）
+
+   设计方向：深墨 + 单色高亮（极简单色，靠明暗层次）
+   主品牌色为白（primary），灰阶分层，红仅用于危险操作。
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* ---- Design Token ---- */
+@theme {
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* 颜色：灰阶单色 + 白高亮 + 红危险 */
+  --color-background: oklch(0.13 0 0);
+  --color-foreground: oklch(0.96 0 0);
+  --color-card: oklch(0.17 0 0);
+  --color-card-foreground: oklch(0.96 0 0);
+  --color-popover: oklch(0.15 0 0);
+  --color-popover-foreground: oklch(0.96 0 0);
+  --color-primary: oklch(0.96 0 0);
+  --color-primary-foreground: oklch(0.13 0 0);
+  --color-secondary: oklch(0.2 0 0);
+  --color-secondary-foreground: oklch(0.96 0 0);
+  --color-muted: oklch(0.2 0 0);
+  --color-muted-foreground: oklch(0.58 0 0);
+  --color-accent: oklch(0.23 0 0);
+  --color-accent-foreground: oklch(0.96 0 0);
+  --color-destructive: oklch(0.58 0.19 25);
+  --color-destructive-foreground: oklch(0.96 0 0);
+  --color-border: oklch(0.27 0 0);
+  --color-input: oklch(0.27 0 0);
+  --color-ring: oklch(0.96 0 0);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
-@layer base {
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    border: 0 solid;
-  }
-  html, :host {
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-    tab-size: 4;
-    font-family: var(--default-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
-    font-feature-settings: var(--default-font-feature-settings, normal);
-    font-variation-settings: var(--default-font-variation-settings, normal);
-    -webkit-tap-highlight-color: transparent;
-  }
-  hr {
-    height: 0;
-    color: inherit;
-    border-top-width: 1px;
-  }
-  abbr:where([title]) {
-    -webkit-text-decoration: underline dotted;
-    text-decoration: underline dotted;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-size: inherit;
-    font-weight: inherit;
-  }
-  a {
-    color: inherit;
-    -webkit-text-decoration: inherit;
-    text-decoration: inherit;
-  }
-  b, strong {
-    font-weight: bolder;
-  }
-  code, kbd, samp, pre {
-    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
-    font-feature-settings: var(--default-mono-font-feature-settings, normal);
-    font-variation-settings: var(--default-mono-font-variation-settings, normal);
-    font-size: 1em;
-  }
-  small {
-    font-size: 80%;
-  }
-  sub, sup {
-    font-size: 75%;
-    line-height: 0;
-    position: relative;
-    vertical-align: baseline;
-  }
-  sub {
-    bottom: -0.25em;
-  }
-  sup {
-    top: -0.5em;
-  }
-  table {
-    text-indent: 0;
-    border-color: inherit;
-    border-collapse: collapse;
-  }
-  :-moz-focusring:where(:not(iframe)) {
-    outline: auto;
-  }
-  progress {
-    vertical-align: baseline;
-  }
-  summary {
-    display: list-item;
-  }
-  ol, ul, menu {
-    list-style: none;
-  }
-  img, svg, video, canvas, audio, iframe, embed, object {
-    display: block;
-    vertical-align: middle;
-  }
-  img, video {
-    max-width: 100%;
-    height: auto;
-  }
-  button, input, select, optgroup, textarea, ::file-selector-button {
-    font: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    letter-spacing: inherit;
-    color: inherit;
-    border-radius: 0;
-    background-color: transparent;
-    opacity: 1;
-  }
-  :where(select:is([multiple], [size])) optgroup {
-    font-weight: bolder;
-  }
-  :where(select:is([multiple], [size])) optgroup option {
-    padding-inline-start: 20px;
-  }
-  ::file-selector-button {
-    margin-inline-end: 4px;
-  }
-  ::placeholder {
-    opacity: 1;
-  }
-  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
-    ::placeholder {
-      color: currentcolor;
-      @supports (color: color-mix(in lab, red, red)) {
-        color: color-mix(in oklab, currentcolor 50%, transparent);
-      }
-    }
-  }
-  textarea {
-    resize: vertical;
-  }
-  ::-webkit-search-decoration {
-    -webkit-appearance: none;
-  }
-  ::-webkit-date-and-time-value {
-    min-height: 1lh;
-    text-align: inherit;
-  }
-  ::-webkit-datetime-edit {
-    display: inline-flex;
-  }
-  ::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
-  }
-  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
-    padding-block: 0;
-  }
-  ::-webkit-calendar-picker-indicator {
-    line-height: 1;
-  }
-  :-moz-ui-invalid {
-    box-shadow: none;
-  }
-  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
-    appearance: button;
-  }
-  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
-    height: auto;
-  }
-  [hidden]:where(:not([hidden="until-found"])) {
-    display: none !important;
-  }
-}
-@layer utilities {
-  .visible {
-    visibility: visible;
-  }
-  .container {
-    width: 100%;
-    @media (width >= 40rem) {
-      max-width: 40rem;
-    }
-    @media (width >= 48rem) {
-      max-width: 48rem;
-    }
-    @media (width >= 64rem) {
-      max-width: 64rem;
-    }
-    @media (width >= 80rem) {
-      max-width: 80rem;
-    }
-    @media (width >= 96rem) {
-      max-width: 96rem;
-    }
-  }
-  .ring {
-    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-  }
-  .filter {
-    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
-  }
-}
+
+/* ---- 基础层 ---- */
 @layer base {
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html,
+  body {
     height: 100%;
   }
   body {
@@ -221,7 +63,10 @@
     -moz-appearance: textfield;
   }
 }
+
+/* ---- 组件层：沿用既有语义 class 名，用 token 重定义样式 ---- */
 @layer components {
+  /* 视图容器（单页切换） */
   .view {
     display: none;
     width: 100%;
@@ -233,6 +78,8 @@
     flex-direction: column;
     animation: fadeIn 0.25s ease;
   }
+
+  /* ---- 按钮 ---- */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -288,7 +135,12 @@
     font-size: 1.125rem;
     font-weight: 700;
   }
-  .setup-view, .history-view, .players-view, .settlement-view {
+
+  /* ---- V1 赛前配置页 ---- */
+  .setup-view,
+  .history-view,
+  .players-view,
+  .settlement-view {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
@@ -317,6 +169,7 @@
     display: flex;
     gap: 0.5rem;
   }
+
   .tab-nav {
     display: flex;
     gap: 0.25rem;
@@ -349,12 +202,14 @@
     border-color: var(--color-primary);
     font-weight: 600;
   }
+
   .tab-content {
     display: none;
   }
   .tab-content.active {
     display: block;
   }
+
   .form-group {
     margin-bottom: 1rem;
   }
@@ -364,7 +219,8 @@
     color: var(--color-muted-foreground);
     margin-bottom: 0.375rem;
   }
-  .form-group input, .form-group select {
+  .form-group input,
+  .form-group select {
     width: 100%;
     padding: 0.625rem 0.75rem;
     background: var(--color-input);
@@ -375,9 +231,12 @@
     outline: none;
     transition: border-color 0.15s ease;
   }
-  .form-group input:focus, .form-group select:focus {
+  .form-group input:focus,
+  .form-group select:focus {
     border-color: var(--color-foreground);
   }
+
+  /* 玩家登记 */
   .player-form {
     display: flex;
     gap: 0.5rem;
@@ -436,6 +295,7 @@
     gap: 0.375rem;
     flex-shrink: 0;
   }
+
   .add-player-list {
     max-height: 260px;
     overflow-y: auto;
@@ -472,6 +332,8 @@
     border-radius: var(--radius-md);
     border: 1px dashed var(--color-border);
   }
+
+  /* 盲注表 */
   .blind-table-wrap {
     overflow-x: auto;
   }
@@ -519,6 +381,8 @@
     margin-top: 0.75rem;
     flex-wrap: wrap;
   }
+
+  /* 模板卡片 */
   .template-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -551,10 +415,13 @@
     color: var(--color-muted-foreground);
     line-height: 1.4;
   }
+
   .start-btn-wrap {
     text-align: center;
     padding: 1.5rem 0;
   }
+
+  /* 奖池分配 */
   .prize-options {
     display: flex;
     flex-direction: column;
@@ -611,6 +478,8 @@
     text-align: right;
     font-size: 0.875rem;
   }
+
+  /* ---- V2 大屏主界面 ---- */
   .game-view {
     height: 100vh;
     height: 100dvh;
@@ -670,6 +539,7 @@
   .game-center {
     text-align: center;
   }
+  /* 环形倒计时 */
   .game-ring {
     position: relative;
     width: 300px;
@@ -714,6 +584,7 @@
     color: var(--color-destructive);
     animation: pulse 1s infinite;
   }
+  /* 盲注 */
   .game-blinds {
     display: flex;
     align-items: center;
@@ -744,6 +615,7 @@
     font-weight: 300;
     margin-top: 1.25rem;
   }
+  /* 下一级预告 */
   .game-next-level {
     display: inline-flex;
     align-items: center;
@@ -760,6 +632,8 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
+
+  /* 右侧信息栏 */
   .game-right {
     background: var(--color-secondary);
     border-left: 1px solid var(--color-border);
@@ -828,6 +702,8 @@
     font-size: 1.25rem;
     font-weight: 700;
   }
+
+  /* 控制栏 */
   .game-controls {
     display: flex;
     align-items: center;
@@ -878,6 +754,8 @@
     border-radius: 3px;
     margin-left: 0.25rem;
   }
+
+  /* 暂停遮罩 */
   .pause-overlay {
     display: none;
     position: absolute;
@@ -905,6 +783,8 @@
     color: var(--color-foreground);
     letter-spacing: 2px;
   }
+
+  /* 升级闪烁 */
   .level-up-flash {
     display: none;
     position: fixed;
@@ -920,6 +800,8 @@
     display: block;
     animation: flashAnim 0.5s ease-out forwards;
   }
+
+  /* ---- V3 玩家抽屉 ---- */
   .drawer-overlay {
     display: none;
     position: fixed;
@@ -1028,6 +910,8 @@
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
   }
+
+  /* ---- V4 模态窗口 ---- */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -1091,6 +975,7 @@
     background: oklch(0.96 0 0 / 0.08);
     border: 1px solid var(--color-primary);
   }
+
   .end-menu {
     display: flex;
     flex-direction: column;
@@ -1188,6 +1073,8 @@
   .settings-events {
     margin-top: 0.75rem;
   }
+
+  /* ---- V5 结算页 ---- */
   .settlement-header {
     text-align: center;
     padding: 2rem 0 1.5rem;
@@ -1302,6 +1189,8 @@
     flex-direction: column;
     gap: 0.5rem;
   }
+
+  /* ---- V6 历史 / 玩家页 ---- */
   .history-header {
     display: flex;
     align-items: center;
@@ -1550,6 +1439,8 @@
     font-size: 0.875rem;
   }
 }
+
+/* ---- 动画 ---- */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1577,13 +1468,16 @@
   }
 }
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
     opacity: 0.4;
   }
 }
+
+/* ---- 响应式 ---- */
 @media (max-width: 1023px) {
   .game-main {
     grid-template-columns: 1fr 220px;
@@ -1608,8 +1502,12 @@
     grid-template-columns: 1fr 220px;
   }
 }
+
 @media (max-width: 767px) {
-  .setup-view, .history-view, .players-view, .settlement-view {
+  .setup-view,
+  .history-view,
+  .players-view,
+  .settlement-view {
     padding: 1rem;
   }
   .game-main {
@@ -1685,6 +1583,7 @@
     grid-template-columns: 1fr;
   }
 }
+
 @media (min-width: 1440px) {
   .game-main {
     grid-template-columns: 1fr 320px;
@@ -1701,161 +1600,5 @@
   }
   .info-value {
     font-size: 1.5rem;
-  }
-}
-@property --tw-shadow {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0 0 #0000;
-}
-@property --tw-shadow-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-shadow-alpha {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 100%;
-}
-@property --tw-inset-shadow {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0 0 #0000;
-}
-@property --tw-inset-shadow-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-inset-shadow-alpha {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 100%;
-}
-@property --tw-ring-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-ring-shadow {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0 0 #0000;
-}
-@property --tw-inset-ring-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-inset-ring-shadow {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0 0 #0000;
-}
-@property --tw-ring-inset {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-ring-offset-width {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-@property --tw-ring-offset-color {
-  syntax: "*";
-  inherits: false;
-  initial-value: #fff;
-}
-@property --tw-ring-offset-shadow {
-  syntax: "*";
-  inherits: false;
-  initial-value: 0 0 #0000;
-}
-@property --tw-blur {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-brightness {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-contrast {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-grayscale {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-hue-rotate {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-invert {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-opacity {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-saturate {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-sepia {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow-color {
-  syntax: "*";
-  inherits: false;
-}
-@property --tw-drop-shadow-alpha {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 100%;
-}
-@property --tw-drop-shadow-size {
-  syntax: "*";
-  inherits: false;
-}
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
-}
-@layer properties {
-  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
-    *, ::before, ::after, ::backdrop {
-      --tw-shadow: 0 0 #0000;
-      --tw-shadow-color: initial;
-      --tw-shadow-alpha: 100%;
-      --tw-inset-shadow: 0 0 #0000;
-      --tw-inset-shadow-color: initial;
-      --tw-inset-shadow-alpha: 100%;
-      --tw-ring-color: initial;
-      --tw-ring-shadow: 0 0 #0000;
-      --tw-inset-ring-color: initial;
-      --tw-inset-ring-shadow: 0 0 #0000;
-      --tw-ring-inset: initial;
-      --tw-ring-offset-width: 0px;
-      --tw-ring-offset-color: #fff;
-      --tw-ring-offset-shadow: 0 0 #0000;
-      --tw-blur: initial;
-      --tw-brightness: initial;
-      --tw-contrast: initial;
-      --tw-grayscale: initial;
-      --tw-hue-rotate: initial;
-      --tw-invert: initial;
-      --tw-opacity: initial;
-      --tw-saturate: initial;
-      --tw-sepia: initial;
-      --tw-drop-shadow: initial;
-      --tw-drop-shadow-color: initial;
-      --tw-drop-shadow-alpha: 100%;
-      --tw-drop-shadow-size: initial;
-    }
   }
 }

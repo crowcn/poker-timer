@@ -1,0 +1,25 @@
+{
+  "name": "poker-timer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ./style.css",
+    "watch": "tailwindcss -i ./src/input.css -o ./style.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crowcn/poker-timer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/crowcn/poker-timer/issues"
+  },
+  "homepage": "https://github.com/crowcn/poker-timer#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

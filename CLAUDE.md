@@ -2,17 +2,17 @@
 
 ## 项目定位
 
-朋友局德州扑克锦标赛盲注计时器。纯前端应用，双击即可使用，零外部依赖。
+朋友局德州扑克锦标赛盲注计时器。纯前端应用，构建后部署到 GitHub Pages。
 
 这是开发目录，不是生产目录。
 
 ## 技术约束
 
-- **多文件结构**：`index.html` 为入口，CSS 和 JS 拆分为独立文件（`style.css`、`app.js` 等），通过相对路径引用
-- **零依赖**：不使用任何框架、CDN、npm 包
+- **多文件结构**：`index.html` 为入口，样式与逻辑拆分为独立文件
+- **样式**：Tailwind CSS v4，本地构建出静态 CSS 提交进仓库
+- **JS**：保持原生 ES6
 - **浏览器兼容**：Chrome / Edge / Safari 最新版，含移动端
 - **中文界面**，代码注释用中文
-- **总文件大小**控制在合理范围内，单个文件尽量不超过 50KB
 
 ## 目录结构
 
@@ -35,10 +35,9 @@ poker-timer/
 - 如果开发过程中发现 PRD 需要调整，先更新 PRD 再改代码，保持一致
 
 ### 代码规范
-- HTML / CSS / JS 拆分为独立文件，`index.html` 通过 `<link>` 和 `<script>` 引用
-- JS 使用普通 `<script src="...">` 引用（不用 ES Module），避免 `file://` 下的 CORS 限制
-- CSS 使用 Custom Properties 管理主题色，方便后续扩展主题
-- 布局使用 CSS Grid / Flexbox
+- HTML / JS 拆分为独立文件，`index.html` 通过 `<link>` 和 `<script>` 引用
+- 样式统一由 Tailwind 管理，design token（主题色 / 字阶 / 圆角 / 阴影）在 `@theme` 中集中定义
+- 布局使用 Tailwind 的 Flexbox / Grid utility
 - JS 使用原生 ES6+，保持简洁
 - 音效用 Web Audio API 合成，不依赖外部音频文件
 
@@ -126,4 +125,4 @@ poker-timer/
 - **托管**：GitHub Pages，源为 `main` 分支根目录
 - **部署机制**：push 到 `main` 后 Pages 自动构建部署，无需手动操作
 - **技术形态**：PWA（`manifest.json` + `sw.js` + Service Worker），支持「添加到主屏幕」+ 离线使用
-- **更新流程**：改代码 → `git commit` → `git push origin main` → Pages 自动重新部署 → 手机联网重新打开即更新
+- **更新流程**：改代码 → 构建 Tailwind CSS → `git commit` → `git push origin main` → Pages 自动重新部署 → 手机联网重新打开即更新

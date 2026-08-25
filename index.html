@@ -22,7 +22,7 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.3.4</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.4.0</span></h1>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
@@ -156,20 +156,38 @@
       <!-- 左侧主区域 -->
       <div class="game-left">
         <div class="game-top-bar">
-          <div>
-            <div class="game-title" id="game-title">友谊赛</div>
-            <div class="game-level" id="game-level">LEVEL 1</div>
-          </div>
+          <div class="game-title" id="game-title">友谊赛</div>
           <div class="game-elapsed" id="game-elapsed">00:00:00</div>
         </div>
+        <div class="game-level" id="game-level">LEVEL 1</div>
         <div class="game-center">
-          <div class="game-blinds" id="game-blinds">
-            <span id="game-sb">100</span>
-            <span class="blind-slash">/</span>
-            <span id="game-bb">200</span>
+          <div class="game-ring">
+            <svg class="ring-svg" viewBox="0 0 120 120">
+              <defs>
+                <filter id="ring-glow" x="-60%" y="-60%" width="220%" height="220%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#f5f5f5" flood-opacity="0.35"/>
+                </filter>
+              </defs>
+              <circle class="ring-track" cx="60" cy="60" r="54"></circle>
+              <circle class="ring-progress" id="ring-progress" cx="60" cy="60" r="54" filter="url(#ring-glow)"></circle>
+            </svg>
+            <div class="game-countdown" id="game-countdown">08:00</div>
           </div>
-          <div class="game-countdown" id="game-countdown">08:00</div>
-          <div class="game-next-level" id="game-next-level">下一级: <span>200 / 400</span></div>
+          <div class="game-blinds" id="game-blinds">
+            <div class="blind-item">
+              <span class="blind-label">小盲</span>
+              <span class="blind-value" id="game-sb">100</span>
+            </div>
+            <span class="blind-divider">/</span>
+            <div class="blind-item">
+              <span class="blind-label">大盲</span>
+              <span class="blind-value" id="game-bb">200</span>
+            </div>
+          </div>
+          <div class="game-next-level" id="game-next-level">
+            <span class="next-label">下一级</span>
+            <span class="next-blinds" id="next-blinds">200 / 400</span>
+          </div>
         </div>
       </div>
 
@@ -221,8 +239,8 @@
       <button class="ctrl-btn" id="ctrl-mushroom" onclick="showMushroomModal()">
         🍄 蘑菇 <span class="ctrl-key">R</span>
       </button>
-      <button class="ctrl-btn" id="ctrl-chop" onclick="showChopModal()" disabled>
-        🤝 协商
+      <button class="ctrl-btn" id="ctrl-end" onclick="showEndMenu()">
+        🏁 结束
       </button>
       <button class="ctrl-btn" onclick="openSettingsFromGame()">
         ⚙️ <span class="ctrl-key">S</span>
