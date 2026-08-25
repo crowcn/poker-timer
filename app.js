@@ -406,6 +406,25 @@ function loadTemplate(name) {
   document.querySelectorAll('.template-card').forEach(card => card.classList.toggle('selected', card.querySelector('h3').textContent.includes(labels[name])));
 }
 
+// ---- 屏幕常亮（Wake Lock）：计时期间阻止移动设备息屏 ----
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch (error) { /* 设备不支持或用户拒绝，静默忽略 */ }
+}
+
+async function releaseWakeLock() {
+  try {
+    if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (error) { /* 忽略 */ }
+}
+
 async function startGame() {
   readConfig();
   if (state.config.prizeMode === 'custom' && state.config.customPrize.reduce((sum, ratio) => sum + ratio, 0) !== 100) return alert('自定义奖池比例合计必须为100%');
@@ -469,11 +488,13 @@ function togglePause() {
     state.levelElapsedBeforeRun = level;
     state.running = false;
     state.levelStartedAt = 0;
+    releaseWakeLock();
     addEvent('pause', '暂停倒计时');
   } else {
     state.running = true;
     state.levelStartedAt = Date.now();
     state.warningPlayed = false;
+    requestWakeLock();
     addEvent('resume', '恢复倒计时');
   }
   updateGameDisplay(); persistProgress();
@@ -631,6 +652,7 @@ function finishGame(reason) {
   const finalElapsed = elapsedSeconds();
   const finalLevelElapsed = currentLevelElapsedSeconds();
   state.running = false; state.elapsedBeforeRun = finalElapsed; state.levelElapsedBeforeRun = finalLevelElapsed; state.levelStartedAt = 0; state.endReason = reason;
+  releaseWakeLock();
   if (!state.settlement) state.settlement = { prizes: calculateNaturalPrizes() };
   const rankings = buildRankings();
   const tournament = { id: state.tournamentId, name: state.config.name, date: new Date().toISOString(), config: JSON.parse(JSON.stringify(state.config)), totalPrizePool: totalChips(), durationMinutes: state.elapsedBeforeRun / 60, finalLevel: state.levelIndex + 1, mushroomsUsed: state.mushroomsUsed, endReason: reason, events: state.events, rankings };
@@ -746,6 +768,13 @@ window.addEventListener('keydown', event => {
 });
 
 window.addEventListener('beforeunload', persistProgress);
+
+// 页面重新可见时，若比赛仍在计时则重新请求常亮（切后台会自动失效）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.view === 'game' && state.running) {
+    requestWakeLock();
+  }
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
   try { await initDB(); } catch (error) { console.warn('IndexedDB 不可用，将仅使用当前页面数据:', error); }
