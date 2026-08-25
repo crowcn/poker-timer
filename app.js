@@ -12,15 +12,14 @@ const DEFAULT_BLINDS = [
 const PRIZE_RATIOS = {
   'winner-takes-all': [100],
   top2: [70, 30],
-  'top3-50': [50, 30, 20],
-  'top3-60': [60, 25, 15]
+  'top3-50': [50, 30, 20]
 };
 
 const state = {
   view: 'setup',
   config: {
     name: '友谊赛', buyin: 10000, mushrooms: 3, mushroomCutoff: 0,
-    prizeMode: 'top3-50', customPrize: [50, 30, 20], blinds: []
+    prizeMode: 'top3-50', customPrize: [50, 30, 20], totalPoints: 1000, blinds: []
   },
   players: [],
   levelIndex: 0,
@@ -170,15 +169,40 @@ function bindPrizeOptions() {
   });
 }
 
+// ---- 自定义奖池：动态名次行 ----
+
+function renderCustomPrize() {
+  const container = document.getElementById('custom-prize');
+  if (!container) return;
+  const rows = state.config.customPrize.length ? state.config.customPrize : [50, 30, 20];
+  container.innerHTML = rows.map((pct, index) => `
+    <div class="custom-prize-row">
+      <label>第${index + 1}名</label>
+      <input type="number" class="pct" min="0" max="100" value="${pct}">%
+      ${rows.length > 2 ? `<button class="btn btn-ghost btn-sm remove-prize" onclick="removeCustomPrizeRow(${index})">删除</button>` : ''}
+    </div>`).join('') + `<button class="btn btn-secondary btn-sm add-prize" onclick="addCustomPrizeRow()">＋ 添加名次</button>`;
+}
+function addCustomPrizeRow() {
+  collectCustomPrize(); state.config.customPrize.push(0); renderCustomPrize();
+}
+function removeCustomPrizeRow(index) {
+  collectCustomPrize(); state.config.customPrize.splice(index, 1); renderCustomPrize();
+}
+function collectCustomPrize() {
+  state.config.customPrize = Array.from(document.querySelectorAll('.custom-prize-row input.pct')).map(input => Math.max(0, Number(input.value) || 0));
+}
+
 function syncConfigInputs() {
   document.getElementById('cfg-name').value = state.config.name;
   document.getElementById('cfg-buyin').value = state.config.buyin;
   document.getElementById('cfg-mushrooms').value = state.config.mushrooms;
   document.getElementById('cfg-mushroom-cutoff').value = state.config.mushroomCutoff;
+  document.getElementById('cfg-total-points').value = state.config.totalPoints;
   const radio = document.querySelector(`input[name="prize-mode"][value="${state.config.prizeMode}"]`);
   if (radio) radio.checked = true;
   document.querySelectorAll('.prize-option').forEach(option => option.classList.toggle('selected', option.querySelector('input').checked));
   document.getElementById('custom-prize')?.classList.toggle('visible', state.config.prizeMode === 'custom');
+  renderCustomPrize();
 }
 
 function readConfig() {
@@ -187,7 +211,8 @@ function readConfig() {
   state.config.mushrooms = Math.max(0, Number(document.getElementById('cfg-mushrooms').value) || 0);
   state.config.mushroomCutoff = Math.max(0, Number(document.getElementById('cfg-mushroom-cutoff').value) || 0);
   state.config.prizeMode = document.querySelector('input[name="prize-mode"]:checked')?.value || 'top3-50';
-  state.config.customPrize = [1, 2, 3].map(i => Math.max(0, Number(document.getElementById(`custom-p${i}`).value) || 0));
+  state.config.totalPoints = Math.max(1, Number(document.getElementById('cfg-total-points').value) || 1000);
+  state.config.customPrize = Array.from(document.querySelectorAll('.custom-prize-row input.pct')).map(input => Math.max(0, Number(input.value) || 0));
   state.config.blinds = Array.from(document.querySelectorAll('#blind-table-body tr')).map(row => {
     const values = Array.from(row.querySelectorAll('input')).map(input => Math.max(0, Number(input.value) || 0));
     return { sb: values[0] || 100, bb: values[1] || 200, ante: values[2] || 0, minutes: values[3] || 8 };
@@ -641,13 +666,13 @@ function cancelGame() {
 
 function showChopModal() {
   const active = inGamePlayers(); if (active.length < 2 || active.length > 3) return;
-  const pool = totalChips();
-  document.getElementById('modal-content').innerHTML = `<div class="modal-header">🤝 协商结束</div><div class="modal-body"><div class="chop-method"><label><input type="radio" name="chop-method" value="equal" checked onchange="updateChopTable()"> 平分</label><label><input type="radio" name="chop-method" value="ratio" onchange="updateChopTable()"> 按当前筹码比例</label><label><input type="radio" name="chop-method" value="custom" onchange="updateChopTable()"> 自定义</label></div><table class="chop-table"><thead><tr><th>最终名次</th><th>玩家</th><th>当前筹码</th><th>分得筹码</th></tr></thead><tbody id="chop-body"></tbody></table><div class="chop-total">奖池参考：${formatNumber(pool)}</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="confirmChop()">确认结束比赛</button></div>`;
+  const pool = state.config.totalPoints;
+  document.getElementById('modal-content').innerHTML = `<div class="modal-header">🤝 协商结束</div><div class="modal-body"><div class="chop-method"><label><input type="radio" name="chop-method" value="equal" checked onchange="updateChopTable()"> 平分</label><label><input type="radio" name="chop-method" value="ratio" onchange="updateChopTable()"> 按当前筹码比例</label><label><input type="radio" name="chop-method" value="custom" onchange="updateChopTable()"> 自定义</label></div><table class="chop-table"><thead><tr><th>最终名次</th><th>玩家</th><th>当前筹码</th><th>分得积分</th></tr></thead><tbody id="chop-body"></tbody></table><div class="chop-total">积分参考：${formatNumber(pool)}</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="confirmChop()">确认结束比赛</button></div>`;
   document.getElementById('modal-overlay').classList.add('visible'); updateChopTable();
 }
 function updateChopTable() {
   const method = document.querySelector('input[name="chop-method"]:checked')?.value || 'equal';
-  const players = inGamePlayers(); const pool = totalChips(); const each = players.length ? Math.floor(pool / players.length) : 0;
+  const players = inGamePlayers(); const pool = state.config.totalPoints; const each = players.length ? Math.floor(pool / players.length) : 0;
   if (method === 'ratio' && document.querySelector('.chop-current:not([readonly])')) {
     const currents = Array.from(document.querySelectorAll('.chop-current')).map(input => Math.max(0, Number(input.value) || 0));
     const currentTotal = currents.reduce((sum, value) => sum + value, 0);
@@ -675,8 +700,8 @@ function confirmChop() {
   if (ranks.length !== activeCount || new Set(ranks).size !== activeCount || ranks.some(rank => !Number.isInteger(rank) || rank < 1 || rank > activeCount)) return toast(`请为 ${activeCount} 名协商玩家填写不重复的最终名次`);
   const total = Object.values(prizes).reduce((sum, value) => sum + value, 0);
   const requestChop = () => { state.settlement = { prizes, chopRanks }; state.endReason = 'chop'; addEvent('chop', '协商结束比赛'); closeModal(); finishGame('chop'); };
-  if (total !== totalChips()) {
-    showConfirm({ title: '结束比赛', message: `分配合计 ${formatNumber(total)} 与奖池参考 ${formatNumber(totalChips())} 不一致，仍要结束比赛吗？`, confirmText: '结束', danger: true, onConfirm: requestChop });
+  if (total !== state.config.totalPoints) {
+    showConfirm({ title: '结束比赛', message: `分配合计 ${formatNumber(total)} 与积分参考 ${formatNumber(state.config.totalPoints)} 不一致，仍要结束比赛吗？`, confirmText: '结束', danger: true, onConfirm: requestChop });
   } else {
     requestChop();
   }
@@ -691,7 +716,7 @@ function finishGame(reason) {
   if (!state.settlement) state.settlement = { prizes: calculateNaturalPrizes() };
   const rankings = buildRankings();
   const tournament = { id: state.tournamentId, name: state.config.name, date: new Date().toISOString(), config: JSON.parse(JSON.stringify(state.config)), totalPrizePool: totalChips(), durationMinutes: state.elapsedBeforeRun / 60, finalLevel: state.levelIndex + 1, mushroomsUsed: state.mushroomsUsed, endReason: reason, events: state.events, rankings };
-  addTournament(tournament).then(() => addParticipations(rankings.map(item => ({ tournamentId: state.tournamentId, playerId: item.playerId, finalRank: item.rank, eliminatedAt: item.eliminatedAt, eliminatedAtLevel: item.eliminatedLevel, mushroomsUsed: item.mushroomsUsed, prizeChips: item.prizeChips })))).catch(error => console.error('保存比赛失败:', error));
+  addTournament(tournament).then(() => addParticipations(rankings.map(item => ({ tournamentId: state.tournamentId, playerId: item.playerId, finalRank: item.rank, eliminatedAt: item.eliminatedAt, eliminatedAtLevel: item.eliminatedLevel, mushroomsUsed: item.mushroomsUsed, prizePoints: item.prizePoints })))).catch(error => console.error('保存比赛失败:', error));
   clearProgress(); playGameEnd(); renderSettlement(tournament, rankings); showView('settlement'); showExportPrompt(tournament);
 }
 
@@ -701,26 +726,26 @@ function buildRankings() {
   const eliminated = state.players.filter(player => !player.inGame).sort((a, b) => (b.eliminationSequence || 0) - (a.eliminationSequence || 0));
   const ordered = [...active, ...eliminated];
   const prizes = state.settlement?.prizes || {};
-  return ordered.map((player, index) => ({ ...player, playerId: player.id, rank: index + 1, prizeChips: prizes[player.id] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedAtLevel: player.inGame ? null : player.eliminatedLevel }));
+  return ordered.map((player, index) => ({ ...player, playerId: player.id, rank: index + 1, prizePoints: prizes[player.id] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedAtLevel: player.inGame ? null : player.eliminatedLevel }));
 }
 function calculateNaturalPrizes() {
   const rankings = buildRankings();
   const ratios = state.config.prizeMode === 'custom' ? state.config.customPrize : (PRIZE_RATIOS[state.config.prizeMode] || PRIZE_RATIOS['top3-50']);
   const prizes = {};
-  ratios.forEach((ratio, index) => { const player = rankings[index]; if (player) prizes[player.id] = Math.floor(totalChips() * ratio / 100); });
+  ratios.forEach((ratio, index) => { const player = rankings[index]; if (player) prizes[player.id] = Math.floor(state.config.totalPoints * ratio / 100); });
   return prizes;
 }
 function renderPrizePreview() {
   const container = document.getElementById('prize-preview'); if (!container) return;
   const ratios = state.config.prizeMode === 'custom' ? state.config.customPrize : (PRIZE_RATIOS[state.config.prizeMode] || PRIZE_RATIOS['top3-50']);
-  container.innerHTML = `<h4>奖池分配</h4>${ratios.map((ratio, index) => `<div class="prize-row"><span class="prize-rank">第 ${index + 1} 名 · ${ratio}%</span><span class="prize-amount">${formatNumber(Math.floor(totalChips() * ratio / 100))}</span></div>`).join('')}`;
+  container.innerHTML = `<h4>积分分配</h4>${ratios.map((ratio, index) => `<div class="prize-row"><span class="prize-rank">第 ${index + 1} 名 · ${ratio}%</span><span class="prize-amount">${formatNumber(Math.floor(state.config.totalPoints * ratio / 100))}</span></div>`).join('')}`;
 }
 
 function renderSettlement(tournament, rankings) {
   const view = document.getElementById('view-settlement');
-  view.innerHTML = `<div class="settlement-header"><div class="trophy">🏆</div><h2>比赛结束</h2><p>${escapeHTML(tournament.name)} · ${new Date(tournament.date).toLocaleDateString('zh-CN')}</p></div><div class="settlement-body"><div class="settlement-left"><div class="stat-card"><table class="rank-table"><thead><tr><th>排名</th><th>玩家</th><th>淘汰时间</th><th>蘑菇</th><th>奖励筹码</th></tr></thead><tbody id="rankings-body">${rankings.map(item => settlementRow(item)).join('')}</tbody></table></div><div class="event-log"><h4>事件日志</h4>${state.events.map(event => `<div class="event-entry"><span class="event-time">[${formatShortDuration(event.time)}]</span> ${escapeHTML(event.detail)}</div>`).join('')}</div></div><div class="settlement-right"><div class="stat-card"><div class="stat-label">比赛时长</div><div class="stat-value">${formatDuration(tournament.durationMinutes * 60)}</div></div><div class="stat-card"><div class="stat-label">经过级别</div><div class="stat-value">${tournament.finalLevel}</div></div><div class="stat-card"><div class="stat-label">蘑菇使用</div><div class="stat-value">${tournament.mushroomsUsed}/${state.config.mushrooms}</div></div><div class="stat-card"><div class="stat-label">总筹码池</div><div class="stat-value">${formatNumber(tournament.totalPrizePool)}</div></div><div class="settlement-actions"><button class="btn btn-secondary" onclick="exportCurrentTournament()">导出 JSON</button><button class="btn btn-secondary" onclick="showHistory()">查看排行榜</button><button class="btn btn-primary" onclick="newGame()">开始新比赛</button></div></div></div>`;
+  view.innerHTML = `<div class="settlement-header"><div class="trophy">🏆</div><h2>比赛结束</h2><p>${escapeHTML(tournament.name)} · ${new Date(tournament.date).toLocaleDateString('zh-CN')}</p></div><div class="settlement-body"><div class="settlement-left"><div class="stat-card"><table class="rank-table"><thead><tr><th>排名</th><th>玩家</th><th>淘汰时间</th><th>蘑菇</th><th>积分</th></tr></thead><tbody id="rankings-body">${rankings.map(item => settlementRow(item)).join('')}</tbody></table></div><div class="event-log"><h4>事件日志</h4>${state.events.map(event => `<div class="event-entry"><span class="event-time">[${formatShortDuration(event.time)}]</span> ${escapeHTML(event.detail)}</div>`).join('')}</div></div><div class="settlement-right"><div class="stat-card"><div class="stat-label">比赛时长</div><div class="stat-value">${formatDuration(tournament.durationMinutes * 60)}</div></div><div class="stat-card"><div class="stat-label">经过级别</div><div class="stat-value">${tournament.finalLevel}</div></div><div class="stat-card"><div class="stat-label">蘑菇使用</div><div class="stat-value">${tournament.mushroomsUsed}/${state.config.mushrooms}</div></div><div class="stat-card"><div class="stat-label">总筹码池</div><div class="stat-value">${formatNumber(tournament.totalPrizePool)}</div></div><div class="stat-card"><div class="stat-label">总积分</div><div class="stat-value">${formatNumber(state.config.totalPoints)}</div></div><div class="settlement-actions"><button class="btn btn-secondary" onclick="exportCurrentTournament()">导出 JSON</button><button class="btn btn-secondary" onclick="showHistory()">查看排行榜</button><button class="btn btn-primary" onclick="newGame()">开始新比赛</button></div></div></div>`;
 }
-function settlementRow(item) { const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank; return `<tr><td class="rank-medal">${medal}</td><td>${escapeHTML(item.nickname)} <small>(${escapeHTML(item.phoneLastFour)})</small></td><td>${item.eliminatedAt == null ? '冠军/协商' : formatShortDuration(item.eliminatedAt)}</td><td>${item.mushroomsUsed || 0}</td><td class="rank-prize"><input type="number" min="0" value="${item.prizeChips}" onchange="changePrize(${item.id}, this.value)"></td></tr>`; }
+function settlementRow(item) { const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank; return `<tr><td class="rank-medal">${medal}</td><td>${escapeHTML(item.nickname)} <small>(${escapeHTML(item.phoneLastFour)})</small></td><td>${item.eliminatedAt == null ? '冠军/协商' : formatShortDuration(item.eliminatedAt)}</td><td>${item.mushroomsUsed || 0}</td><td class="rank-prize"><input type="number" min="0" value="${item.prizePoints}" onchange="changePrize(${item.id}, this.value)"></td></tr>`; }
 function showExportPrompt(tournament) {
   document.getElementById('modal-content').innerHTML = `<div class="modal-header">备份比赛数据</div><div class="modal-body"><p class="modal-info">比赛已保存，是否立即导出本场 JSON 备份？</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">暂不导出</button><button class="btn btn-primary" onclick="exportTournamentData(window.finishedTournament)">导出 JSON</button></div>`;
   window.finishedTournament = tournament;
@@ -739,9 +764,9 @@ async function changePrize(id, value) {
     const tournament = await getTournament(state.tournamentId).catch(() => null);
     if (!tournament?.rankings) return;
     const item = tournament.rankings.find(row => row.playerId === Number(id));
-    if (item) item.prizeChips = state.settlement.prizes[key];
+    if (item) item.prizePoints = state.settlement.prizes[key];
     await addTournament(tournament).catch(() => {});
-    await addParticipations(tournament.rankings.map(row => ({ tournamentId: tournament.id, playerId: row.playerId, finalRank: row.rank, eliminatedAt: row.eliminatedAt, eliminatedAtLevel: row.eliminatedLevel, mushroomsUsed: row.mushroomsUsed, prizeChips: row.prizeChips }))).catch(() => {});
+    await addParticipations(tournament.rankings.map(row => ({ tournamentId: tournament.id, playerId: row.playerId, finalRank: row.rank, eliminatedAt: row.eliminatedAt, eliminatedAtLevel: row.eliminatedLevel, mushroomsUsed: row.mushroomsUsed, prizePoints: row.prizePoints }))).catch(() => {});
   }
 }
 function newGame() {

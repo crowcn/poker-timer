@@ -8,7 +8,7 @@
 // ============================================================
 
 const DB_NAME = 'poker-timer';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 let db = null;
 
 // ---- IndexedDB 初始化 ----
@@ -18,12 +18,18 @@ function initDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const database = e.target.result;
-      if (e.oldVersion === 0) {
-        // 全新安装：直接建 v2 结构
+      if (e.oldVersion < 3) {
+        // v3：奖励单位从筹码改为积分，历史比赛与参与记录不兼容 → 清空重建
+        // 玩家档案保留，只删与旧「奖励筹码」逻辑绑定的比赛/参与记录
+        const tx = e.target.transaction;
+        ['tournaments', 'participations'].forEach(name => {
+          if (database.objectStoreNames.contains(name)) database.deleteObjectStore(name);
+        });
+        if (!database.objectStoreNames.contains('players')) {
+          const playersStore = database.createObjectStore('players', { keyPath: 'id' });
+          playersStore.createIndex('byPhone', 'phoneLastFour', { unique: false });
+        }
         createV2Schema(database);
-      } else if (e.oldVersion < 2) {
-        // v1 → v2：迁移旧数据（尾号主键 → 独立 id 主键）
-        migrateV1toV2(database, e.target.transaction);
       }
     };
     req.onsuccess = (e) => {
@@ -53,58 +59,6 @@ function createV2Schema(database) {
   if (!database.objectStoreNames.contains('tournaments')) {
     database.createObjectStore('tournaments', { keyPath: 'id' });
   }
-}
-
-// v1 → v2 迁移：读旧三表 → 建尾号→id 映射 → 删旧建新 → 写回
-function migrateV1toV2(database, tx) {
-  const playersReq = tx.objectStore('players').getAll();
-  const partsReq = tx.objectStore('participations').getAll();
-  const tournsReq = tx.objectStore('tournaments').getAll();
-
-  let players = [], parts = [], tourns = [];
-  let pending = 3;
-
-  const finish = () => {
-    // 尾号 → id 映射（按顺序分配 id = 1,2,3…）
-    const idMap = {};
-    players.forEach((p, i) => { idMap[p.phoneLastFour] = i + 1; });
-
-    database.deleteObjectStore('players');
-    database.deleteObjectStore('participations');
-    database.deleteObjectStore('tournaments');
-    createV2Schema(database);
-
-    const playersStore = tx.objectStore('players');
-    const partsStore = tx.objectStore('participations');
-    const tournsStore = tx.objectStore('tournaments');
-
-    players.forEach((p, i) => {
-      playersStore.put({ id: i + 1, phoneLastFour: p.phoneLastFour, nickname: p.nickname, createdAt: p.createdAt });
-    });
-
-    parts.forEach(part => {
-      const playerId = idMap[part.phoneLastFour];
-      if (!playerId) return; // 尾号对不上，丢弃这条孤记录
-      partsStore.put({
-        tournamentId: part.tournamentId,
-        playerId,
-        finalRank: part.finalRank,
-        eliminatedAt: part.eliminatedAt,
-        eliminatedAtLevel: part.eliminatedAtLevel,
-        mushroomsUsed: part.mushroomsUsed,
-        prizeChips: part.prizeChips
-      });
-    });
-
-    tourns.forEach(t => {
-      t.rankings = (t.rankings || []).map(r => ({ ...r, playerId: idMap[r.phoneLastFour] ?? null }));
-      tournsStore.put(t);
-    });
-  };
-
-  playersReq.onsuccess = () => { players = playersReq.result || []; if (--pending === 0) finish(); };
-  partsReq.onsuccess = () => { parts = partsReq.result || []; if (--pending === 0) finish(); };
-  tournsReq.onsuccess = () => { tourns = tournsReq.result || []; if (--pending === 0) finish(); };
 }
 
 // ---- 通用事务辅助 ----
@@ -177,7 +131,7 @@ async function getAllTournaments() {
 // ---- Participations CRUD ----
 
 async function addParticipation(participation) {
-  // participation: { tournamentId, playerId, finalRank, eliminatedAt, eliminatedAtLevel, mushroomsUsed, prizeChips }
+  // participation: { tournamentId, playerId, finalRank, eliminatedAt, eliminatedAtLevel, mushroomsUsed, prizePoints }
   const store = txStore('participations', 'readwrite');
   return promisifyRequest(store.put(participation));
 }
@@ -291,7 +245,7 @@ async function importAllData(data) {
         eliminatedAt: part.eliminatedAt,
         eliminatedAtLevel: part.eliminatedAtLevel,
         mushroomsUsed: part.mushroomsUsed,
-        prizeChips: part.prizeChips
+        prizePoints: part.prizePoints
       }))
       .filter(part => part.playerId != null);
     await addParticipations(parts);

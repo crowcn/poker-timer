@@ -31,7 +31,7 @@ function buildPlayerStats(records) {
       games: rows.length,
       wins: rows.filter(r => r.finalRank === 1).length,
       top3: rows.filter(r => r.finalRank <= 3).length,
-      chips: rows.reduce((sum, r) => sum + (r.prizeChips || 0), 0)
+      points: rows.reduce((sum, r) => sum + (r.prizePoints || 0), 0)
     };
   };
 }
@@ -40,11 +40,11 @@ function buildPlayerStats(records) {
 function sortPlayersData(data, board) {
   return data.sort((a, b) => {
     if ((a.games === 0) !== (b.games === 0)) return a.games === 0 ? 1 : -1;
-    if (board === 'chips') return b.chips - a.chips;
+    if (board === 'points') return b.points - a.points;
     if (board === 'games') return b.games - a.games;
     if (board === 'wins') return (b.wins / b.games) - (a.wins / a.games);
     if (board === 'top3') return (b.top3 / b.games) - (a.top3 / a.games);
-    return b.chips - a.chips;
+    return b.points - a.points;
   });
 }
 
@@ -57,7 +57,7 @@ function renderPlayersList(board = 'chips') {
   const data = sortPlayersData(players.map(buildPlayerStats(records)), board);
 
   const boards = [
-    ['chips', '总筹码榜'],
+    ['points', '总积分榜'],
     ['games', '常客榜'],
     ['wins', '胜率榜'],
     ['top3', '前三率榜']
@@ -75,7 +75,7 @@ function renderPlayersList(board = 'chips') {
       ${data.map((item, index) => {
         const p = item.player;
         const winRate = item.games ? Math.round(item.wins / item.games * 100) : 0;
-        const value = board === 'chips' ? formatNumber(item.chips)
+        const value = board === 'points' ? formatNumber(item.points)
           : board === 'games' ? `${item.games}场`
           : board === 'wins' ? `${winRate}%`
           : `${item.top3}次`;
@@ -102,7 +102,7 @@ function showPlayerDetail(id) {
   const rows = records.filter(r => r.playerId === id);
   const wins = rows.filter(r => r.finalRank === 1).length;
   const top3 = rows.filter(r => r.finalRank <= 3).length;
-  const chips = rows.reduce((sum, r) => sum + (r.prizeChips || 0), 0);
+  const points = rows.reduce((sum, r) => sum + (r.prizePoints || 0), 0);
   const mushrooms = rows.reduce((sum, r) => sum + (r.mushroomsUsed || 0), 0);
   const avgRank = rows.length ? (rows.reduce((sum, r) => sum + r.finalRank, 0) / rows.length).toFixed(1) : '—';
   const tMap = new Map(tournaments.map(t => [t.id, t]));
@@ -123,7 +123,7 @@ function showPlayerDetail(id) {
       <div class="ps-grid">
         <div class="ps-item"><div class="ps-value">${rows.length}</div><div class="ps-label">参赛次数</div></div>
         <div class="ps-item"><div class="ps-value">${wins}/${top3}</div><div class="ps-label">冠军 / 前三</div></div>
-        <div class="ps-item"><div class="ps-value">${formatNumber(chips)}</div><div class="ps-label">总奖励筹码</div></div>
+        <div class="ps-item"><div class="ps-value">${formatNumber(points)}</div><div class="ps-label">总积分</div></div>
         <div class="ps-item"><div class="ps-value">${avgRank}</div><div class="ps-label">平均排名</div></div>
         <div class="ps-item"><div class="ps-value">${mushrooms}</div><div class="ps-label">蘑菇使用</div></div>
       </div>
@@ -133,7 +133,7 @@ function showPlayerDetail(id) {
           const t = tMap.get(item.tournamentId);
           return `<li class="tournament-item" onclick="showTournamentDetail('${item.tournamentId}')">
             <div class="t-header"><span class="t-name">${escapeHTML(t?.name || item.tournamentId)}</span><span class="t-date">${t?.date ? new Date(t.date).toLocaleDateString('zh-CN') : '—'}</span></div>
-            <div class="t-stats">第 ${item.finalRank} 名 · 奖励 ${formatNumber(item.prizeChips)} · 蘑菇 ${item.mushroomsUsed || 0}</div>
+            <div class="t-stats">第 ${item.finalRank} 名 · 积分 ${formatNumber(item.prizePoints)} · 蘑菇 ${item.mushroomsUsed || 0}</div>
           </li>`;
         }).join('') || '<li class="empty-state">暂无参赛记录</li>'}
       </ul>

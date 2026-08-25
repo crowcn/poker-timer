@@ -22,7 +22,7 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.5.0</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.0</span></h1>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
@@ -102,6 +102,10 @@
 
     <!-- Tab 内容：奖池分配 -->
     <div id="tab-prize" class="tab-content">
+      <div class="form-group">
+        <label>总奖励积分</label>
+        <input type="number" id="cfg-total-points" value="1000" min="1" step="100">
+      </div>
       <div class="prize-options" id="prize-options">
         <label class="prize-option" data-prize="winner-takes-all">
           <input type="radio" name="prize-mode" value="winner-takes-all"> 冠军通吃 100%
@@ -112,18 +116,11 @@
         <label class="prize-option selected" data-prize="top3-50">
           <input type="radio" name="prize-mode" value="top3-50" checked> 前3名 50/30/20
         </label>
-        <label class="prize-option" data-prize="top3-60">
-          <input type="radio" name="prize-mode" value="top3-60"> 前3名 60/25/15
-        </label>
         <label class="prize-option" data-prize="custom">
           <input type="radio" name="prize-mode" value="custom"> 自定义
         </label>
       </div>
-      <div id="custom-prize" class="custom-prize-inputs">
-        <div class="custom-prize-row"><label>第1名</label><input type="number" id="custom-p1" value="50" min="0" max="100">%</div>
-        <div class="custom-prize-row"><label>第2名</label><input type="number" id="custom-p2" value="30" min="0" max="100">%</div>
-        <div class="custom-prize-row"><label>第3名</label><input type="number" id="custom-p3" value="20" min="0" max="100">%</div>
-      </div>
+      <div id="custom-prize" class="custom-prize-inputs"></div>
     </div>
 
     <!-- 模板卡片 -->
