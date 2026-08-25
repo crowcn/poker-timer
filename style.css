@@ -274,6 +274,44 @@ html, body {
   color: var(--text-muted);
   font-size: 12px;
 }
+.player-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 添加玩家弹层 */
+.add-player-list {
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+.add-player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.add-player-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.add-player-row .ap-name { font-weight: 500; }
+.add-player-row .ap-phone { color: var(--text-secondary); font-size: 13px; }
+.add-player-new {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border-color);
+}
 
 /* 盲注表 */
 .blind-table-wrap {

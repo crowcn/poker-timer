@@ -158,29 +158,6 @@ function bindTabs() {
       document.getElementById(button.dataset.tab)?.classList.add('active');
     });
   });
-  const phoneInput = document.getElementById('input-phone');
-  phoneInput?.addEventListener('input', updatePlayerHint);
-}
-
-async function updatePlayerHint() {
-  const phoneInput = document.getElementById('input-phone');
-  const nicknameInput = document.getElementById('input-nickname');
-  const hint = document.getElementById('player-hint');
-  const phone = phoneInput?.value.trim() || '';
-  if (!hint || !nicknameInput) return;
-  hint.style.display = 'none';
-  hint.textContent = '';
-  if (!/^\d{4}$/.test(phone) || state.players.some(player => player.phoneLastFour === phone)) return;
-  const old = (await getPlayersByPhone(phone).catch(() => []))[0];
-  if (phoneInput.value.trim() !== phone) return;
-  if (old) {
-    nicknameInput.value = old.nickname;
-    hint.textContent = `历史玩家：${old.nickname}，已自动填充昵称`;
-    hint.style.display = 'block';
-  } else {
-    hint.textContent = '未找到历史记录，请输入昵称';
-    hint.style.display = 'block';
-  }
 }
 
 function bindPrizeOptions() {
@@ -263,30 +240,147 @@ function renderPlayers() {
   if (!list) return;
   list.innerHTML = state.players.map((player, index) => `
     <li class="player-item">
-      <div class="player-info"><span class="player-number">${index + 1}</span><span class="player-name">${escapeHTML(player.nickname)}</span><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span>${player.seat ? `<span class="player-seat">座位 ${escapeHTML(player.seat)}</span>` : ''}</div>
-      <button class="btn btn-ghost btn-sm" onclick="removeSetupPlayer(${index})">删除</button>
+      <div class="player-info"><span class="player-number">${index + 1}</span><span class="player-name">${escapeHTML(player.nickname)}</span><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span></div>
+      <div class="player-item-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editSeat(${index})">${player.seat ? `座位 ${escapeHTML(player.seat)}` : '补填座位'}</button>
+        <button class="btn btn-ghost btn-sm" onclick="removeSetupPlayer(${index})">删除</button>
+      </div>
     </li>`).join('');
   count.textContent = `共 ${state.players.length} 人${state.players.length < 2 ? '，至少需要 2 人' : ''}`;
 }
 
-async function addPlayerFromForm() {
-  const phoneInput = document.getElementById('input-phone');
-  const nicknameInput = document.getElementById('input-nickname');
-  const seatInput = document.getElementById('input-seat');
-  const phone = phoneInput.value.trim();
-  if (!/^\d{4}$/.test(phone)) return alert('请输入4位手机尾号');
-  const existing = await getPlayersByPhone(phone).catch(() => []);
-  let nickname = nicknameInput.value.trim();
-  if (!nickname && existing.length) nickname = existing[0].nickname;
-  if (!nickname) return alert('请输入昵称');
-  const id = existing.length ? existing[0].id : await nextPlayerId();
-  if (state.players.some(player => player.id === id)) return alert('该玩家已登记');
-  const player = { id, phoneLastFour: phone, nickname, seat: seatInput.value.trim(), inGame: true, eliminatedAt: null, eliminatedLevel: null, mushroomsUsed: 0, eliminationHistory: [], rebuySnapshot: null };
-  state.players.push(player);
-  await addPlayer({ id, phoneLastFour: phone, nickname, createdAt: Date.now() }).catch(() => {});
-  phoneInput.value = ''; nicknameInput.value = ''; seatInput.value = '';
-  document.getElementById('player-hint').style.display = 'none';
+// 补填 / 修改座位号
+function editSeat(index) {
+  const player = state.players[index];
+  if (!player) return;
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">补填座位号</div>
+    <div class="modal-body">
+      <p class="modal-info">${escapeHTML(player.nickname)} (${escapeHTML(player.phoneLastFour)})</p>
+      <div class="form-group">
+        <label>座位号</label>
+        <input type="text" id="edit-seat" value="${escapeHTML(player.seat || '')}" maxlength="3" placeholder="留空表示未分配">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSeat(${index})">保存</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+function saveSeat(index) {
+  const seat = document.getElementById('edit-seat')?.value.trim() || '';
+  if (state.players[index]) state.players[index].seat = seat;
+  closeModal();
   renderPlayers();
+}
+
+// ---- 添加玩家弹层（尾号即时查询 + 勾选多选 + 全新玩家新增） ----
+
+async function showAddPlayersModal() {
+  const allPlayers = await getAllPlayers().catch(() => []);
+  window.addPlayersData = { allPlayers, selected: new Set() };
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">添加玩家</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>手机尾号（4位）</label>
+        <input type="text" id="add-player-search" maxlength="4" inputmode="numeric" placeholder="输入尾号过滤，留空显示全部历史玩家">
+      </div>
+      <div id="add-player-list"></div>
+      <div id="add-player-new"></div>
+      <p id="add-player-count" style="font-size:13px;color:var(--text-secondary);margin-top:8px;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmAddPlayers()">确认添加</button>
+    </div>`;
+  const search = document.getElementById('add-player-search');
+  search?.addEventListener('input', () => renderAddPlayerList(search.value));
+  renderAddPlayerList('');
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+function renderAddPlayerList(filter = '') {
+  const { allPlayers, selected } = window.addPlayersData || { allPlayers: [], selected: new Set() };
+  const filtered = allPlayers.filter(p => (p.phoneLastFour || '').startsWith(filter));
+  const isFullPhone = /^\d{4}$/.test(filter);
+  const noMatch = isFullPhone && filtered.length === 0;
+
+  const list = document.getElementById('add-player-list');
+  if (list) {
+    list.innerHTML = filtered.map(p => `
+      <label class="add-player-row">
+        <input type="checkbox" ${selected.has(p.id) ? 'checked' : ''} onchange="toggleAddPlayer(${p.id}, this.checked)">
+        <span class="ap-name">${escapeHTML(p.nickname)}</span>
+        <span class="ap-phone">(${escapeHTML(p.phoneLastFour)})</span>
+      </label>`).join('') || `<div class="empty-state" style="padding:16px;">${isFullPhone ? '未找到该尾号的历史玩家' : '暂无历史玩家'}</div>`;
+  }
+
+  const newArea = document.getElementById('add-player-new');
+  if (newArea) {
+    newArea.innerHTML = noMatch ? `
+      <div class="add-player-new">
+        <div class="form-group">
+          <label>全新玩家 · 昵称</label>
+          <input type="text" id="add-player-nickname" maxlength="20" placeholder="输入昵称">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="createNewPlayer()">新增该玩家</button>
+      </div>` : '';
+  }
+
+  const count = document.getElementById('add-player-count');
+  if (count) count.textContent = `已勾选 ${selected.size} 人，座位号可稍后在登记列表补填。`;
+}
+
+function toggleAddPlayer(id, checked) {
+  const { selected } = window.addPlayersData || { selected: new Set() };
+  if (checked) selected.add(id); else selected.delete(id);
+  const count = document.getElementById('add-player-count');
+  if (count) count.textContent = `已勾选 ${selected.size} 人，座位号可稍后在登记列表补填。`;
+}
+
+async function createNewPlayer() {
+  const search = document.getElementById('add-player-search');
+  const nicknameInput = document.getElementById('add-player-nickname');
+  const phone = search?.value.trim() || '';
+  const nickname = nicknameInput?.value.trim() || '';
+  if (!/^\d{4}$/.test(phone)) return alert('请输入4位手机尾号');
+  if (!nickname) return alert('请输入昵称');
+  const { allPlayers, selected } = window.addPlayersData;
+  const existing = await getPlayersByPhone(phone).catch(() => []);
+  let id;
+  if (existing.length) {
+    id = existing[0].id;
+  } else {
+    id = await nextPlayerId();
+    await addPlayer({ id, phoneLastFour: phone, nickname, createdAt: Date.now() }).catch(() => {});
+  }
+  if (!allPlayers.some(p => p.id === id)) {
+    allPlayers.push({ id, phoneLastFour: phone, nickname, createdAt: Date.now() });
+  }
+  selected.add(id);
+  renderAddPlayerList(phone);
+}
+
+async function confirmAddPlayers() {
+  const { allPlayers, selected } = window.addPlayersData || { allPlayers: [], selected: new Set() };
+  let added = 0;
+  for (const id of selected) {
+    const p = allPlayers.find(x => x.id === id);
+    if (!p) continue;
+    if (state.players.some(player => player.id === id)) continue; // 已登记跳过
+    state.players.push({
+      id, phoneLastFour: p.phoneLastFour, nickname: p.nickname, seat: '',
+      inGame: true, eliminatedAt: null, eliminatedLevel: null, mushroomsUsed: 0, eliminationHistory: [], rebuySnapshot: null
+    });
+    await addPlayer({ id, phoneLastFour: p.phoneLastFour, nickname: p.nickname, createdAt: p.createdAt || Date.now() }).catch(() => {});
+    added++;
+  }
+  closeModal();
+  renderPlayers();
+  if (!added) alert('没有新添加的玩家');
 }
 
 function removeSetupPlayer(index) {

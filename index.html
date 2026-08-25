@@ -22,7 +22,7 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.2.0</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.3.0</span></h1>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
@@ -57,13 +57,7 @@
 
     <!-- Tab 内容：玩家登记 -->
     <div id="tab-players" class="tab-content">
-      <div class="player-form">
-        <input type="text" id="input-phone" placeholder="手机尾号（4位）" maxlength="4" inputmode="numeric">
-        <input type="text" id="input-nickname" placeholder="昵称">
-        <input type="text" id="input-seat" placeholder="座位号" style="width:70px;flex:none;" maxlength="3">
-        <button class="btn btn-primary" onclick="addPlayerFromForm()">添加</button>
-      </div>
-      <div id="player-hint" style="font-size:13px;color:var(--accent);margin-bottom:8px;display:none;"></div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="showAddPlayersModal()">＋ 添加玩家</button>
       <ul id="player-list" class="player-list"></ul>
       <div id="player-count" style="font-size:13px;color:var(--text-muted);margin-top:8px;"></div>
     </div>
