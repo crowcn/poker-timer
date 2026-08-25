@@ -11,17 +11,18 @@ function isSoundEnabled() {
   return soundEnabled;
 }
 
-function refreshSoundToggles() {
-  document.querySelectorAll('.sound-toggle').forEach((btn) => {
-    btn.textContent = soundEnabled ? '🔊' : '🔇';
-    btn.dataset.state = soundEnabled ? 'on' : 'off';
+// 同步菜单里的声音 switch 显示
+function updateSoundSwitch() {
+  document.querySelectorAll('#app-menu .sound-switch').forEach((sw) => {
+    sw.checked = soundEnabled;
+    sw.dataset.state = soundEnabled ? 'on' : 'off';
   });
 }
 
 function toggleSound() {
   soundEnabled = !soundEnabled;
   localStorage.setItem(SOUND_KEY, soundEnabled ? 'on' : 'off');
-  refreshSoundToggles();
+  updateSoundSwitch();
 }
 
 // 懒初始化 AudioContext（需要用户交互后才能创建）

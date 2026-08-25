@@ -864,6 +864,36 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('DOMContentLoaded', async () => {
   try { await initDB(); } catch (error) { console.warn('IndexedDB 不可用，将仅使用当前页面数据:', error); }
   initSetup();
-  refreshSoundToggles();
   restorePrompt();
+});
+
+// ---- 顶栏菜单 ----
+function renderAppMenu() {
+  const menu = document.getElementById('app-menu');
+  menu.innerHTML = `
+    <button class="menu-item" onclick="showPlayers(); closeAppMenu();">玩家</button>
+    <button class="menu-item" onclick="showHistory(); closeAppMenu();">历史</button>
+    <button class="menu-item" onclick="showImportExport(); closeAppMenu();">导入/导出</button>
+    <div class="menu-divider"></div>
+    <label class="menu-item menu-switch-row">
+      <span>声音</span>
+      <input type="checkbox" class="sound-switch" ${isSoundEnabled() ? 'checked' : ''} onchange="toggleSound()">
+    </label>`;
+}
+
+function openAppMenu() {
+  const menu = document.getElementById('app-menu');
+  if (menu.classList.contains('open')) { closeAppMenu(); return; }
+  renderAppMenu();
+  menu.classList.add('open');
+}
+
+function closeAppMenu() {
+  document.getElementById('app-menu').classList.remove('open');
+}
+
+// 点击菜单外部关闭
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#app-menu') || e.target.closest('.menu-trigger')) return;
+  closeAppMenu();
 });
