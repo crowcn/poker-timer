@@ -797,11 +797,11 @@
     border-bottom: none;
   }
   .info-label {
-    font-size: 0.8125rem;
+    font-size: 1rem;
     color: var(--color-muted-foreground);
   }
   .info-value {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
@@ -817,21 +817,21 @@
   }
   .prize-preview {
     margin-top: 0.5rem;
-    padding: 0.75rem;
+    padding: 0.875rem;
     background: var(--color-card);
     border-radius: var(--radius-md);
   }
   .prize-preview h4 {
-    font-size: 0.75rem;
+    font-size: 1.0625rem;
     color: var(--color-muted-foreground);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.625rem;
     text-transform: uppercase;
   }
   .prize-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.25rem 0;
-    font-size: 0.875rem;
+    padding: 0.375rem 0;
+    font-size: 1.125rem;
   }
   .prize-rank {
     color: var(--color-muted-foreground);
@@ -842,7 +842,7 @@
     font-weight: 600;
   }
   .mushroom-display {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
   }
   .game-controls {
@@ -1655,10 +1655,10 @@
     font-size: 2.5rem;
   }
   .info-value {
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
   }
   .prize-preview .prize-amount {
-    font-size: 0.8125rem;
+    font-size: 1rem;
   }
   .settlement-body {
     grid-template-columns: 1fr 220px;
@@ -1755,8 +1755,26 @@
   .blind-value {
     font-size: 4rem;
   }
+  .info-item {
+    padding: 1rem 0;
+  }
+  .info-label {
+    font-size: 1.125rem;
+  }
   .info-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+  }
+  .prize-preview {
+    padding: 1rem;
+  }
+  .prize-preview h4 {
+    font-size: 1.125rem;
+  }
+  .prize-row {
+    font-size: 1.25rem;
+  }
+  .mushroom-display {
+    font-size: 1.75rem;
   }
 }
 @property --tw-rotate-x {

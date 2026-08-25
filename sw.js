@@ -6,7 +6,7 @@
 //   - 离线时回退到缓存，保证离线可用
 // ============================================================
 
-const CACHE_NAME = 'poker-timer-v4';
+const CACHE_NAME = 'poker-timer-v5';
 
 const ASSETS = [
   './',
