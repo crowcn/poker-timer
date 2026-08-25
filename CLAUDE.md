@@ -118,3 +118,12 @@ poker-timer/
 - 事件日志必须持久化，不仅仅是内存状态
 - 历史数据和跨场次统计是 V1 必须功能
   > "我希望系统能够记录和查询历史所有比赛场次的完整数据，也可以交叉查询"
+
+## 部署与发布
+
+- **仓库**：https://github.com/crowcn/poker-timer （public）
+- **线上地址**：https://crowcn.github.io/poker-timer/
+- **托管**：GitHub Pages，源为 `main` 分支根目录
+- **部署机制**：push 到 `main` 后 Pages 自动构建部署，无需手动操作
+- **技术形态**：PWA（`manifest.json` + `sw.js` + Service Worker），支持「添加到主屏幕」+ 离线使用
+- **更新流程**：改代码 → `git commit` → `git push origin main` → Pages 自动重新部署 → 手机联网重新打开即更新
