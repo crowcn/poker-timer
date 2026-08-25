@@ -22,7 +22,7 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.1</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.2</span></h1>
       <div class="header-actions">
         <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
@@ -57,9 +57,12 @@
 
     <!-- Tab 内容：玩家登记 -->
     <div id="tab-players" class="tab-content">
-      <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="showAddPlayersModal()">＋ 添加玩家</button>
+      <div class="players-register-header">
+        <span class="players-register-title">玩家登记</span>
+        <button class="btn btn-primary btn-sm" onclick="showAddPlayersModal()">＋ 添加玩家</button>
+      </div>
       <ul id="player-list" class="player-list"></ul>
-      <div id="player-count" style="font-size:13px;color:var(--text-muted);margin-top:8px;"></div>
+      <div id="player-count" class="player-count"></div>
     </div>
 
     <!-- Tab 内容：盲注表 -->
@@ -213,15 +216,11 @@
         </div>
       </div>
 
-      <!-- 暂停遮罩 -->
-      <div class="pause-overlay visible" id="pause-overlay">
-        <div class="pause-text">已暂停</div>
-      </div>
     </div>
 
     <!-- 控制栏 -->
     <div class="game-controls">
-      <button class="ctrl-btn ctrl-play" id="ctrl-pause" onclick="togglePause()">
+      <button class="ctrl-btn ctrl-play" id="ctrl-pause" data-state="paused" onclick="togglePause()">
         ▶ 开始 <span class="ctrl-key">空格</span>
       </button>
       <button class="ctrl-btn" onclick="prevLevel()">

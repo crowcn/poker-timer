@@ -497,8 +497,9 @@ function updateGameDisplay() {
   document.getElementById('info-avg').textContent = formatNumber(active ? Math.floor(totalChips() / active) : 0);
   document.getElementById('info-ante').textContent = level.ante ? formatNumber(level.ante) : '—';
   document.getElementById('info-mushroom').textContent = `${Math.max(0, state.config.mushrooms - state.mushroomsUsed)}/${state.config.mushrooms}`;
-  document.getElementById('ctrl-pause').innerHTML = state.running ? '⏸ 暂停 <span class="ctrl-key">空格</span>' : '▶ 开始 <span class="ctrl-key">空格</span>';
-  document.getElementById('pause-overlay').classList.toggle('visible', !state.running);
+  const pauseBtn = document.getElementById('ctrl-pause');
+  pauseBtn.innerHTML = state.running ? '⏸ 暂停 <span class="ctrl-key">空格</span>' : '▶ 开始 <span class="ctrl-key">空格</span>';
+  pauseBtn.dataset.state = state.running ? 'running' : 'paused';
   document.getElementById('ctrl-mushroom').disabled = !canUseMushroom();
   renderPrizePreview();
   if (state.running && remaining <= 30 && remaining > 0 && !state.warningPlayed) { playWarning(); state.warningPlayed = true; }
