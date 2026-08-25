@@ -361,7 +361,9 @@ async function createNewPlayer() {
     allPlayers.push({ id, phoneLastFour: phone, nickname, createdAt: Date.now() });
   }
   selected.add(id);
-  renderAddPlayerList(phone);
+  // 新增成功后清空搜索框，回到默认全量列表（已勾选的玩家仍可见）
+  if (search) search.value = '';
+  renderAddPlayerList('');
 }
 
 async function confirmAddPlayers() {
