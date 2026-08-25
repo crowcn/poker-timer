@@ -16,6 +16,7 @@ const ASSETS = [
   './db.js',
   './audio.js',
   './history.js',
+  './players.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

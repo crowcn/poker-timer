@@ -22,8 +22,9 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.1.0</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.2.0</span></h1>
       <div class="header-actions">
+        <button class="btn btn-ghost" onclick="showPlayers()">玩家</button>
         <button class="btn btn-ghost" onclick="showHistory()">历史</button>
         <button class="btn btn-ghost" onclick="showImportExport()">导入/导出</button>
       </div>
@@ -267,11 +268,17 @@
        ============================================================ -->
   <div id="view-history" class="view history-view"></div>
 
+  <!-- ============================================================
+       V7: 玩家管理页
+       ============================================================ -->
+  <div id="view-players" class="view players-view"></div>
+
   <!-- Scripts -->
   <script src="db.js"></script>
   <script src="audio.js"></script>
   <script src="app.js"></script>
   <script src="history.js"></script>
+  <script src="players.js"></script>
   <script>
     // 注册 Service Worker（file:// 直接打开时会失败，属正常；部署到 HTTPS 后生效实现离线）
     if ('serviceWorker' in navigator) {
