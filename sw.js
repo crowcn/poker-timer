@@ -2,11 +2,11 @@
 // sw.js — Service Worker：离线缓存
 //
 // 采用「网络优先、离线回退」策略：
-//   - 有网时总是拉取最新文件并更新缓存，所以改代码后无需改版本号
+//   - 有网时用 cache:'no-store' 绕过 HTTP 缓存，确保拿到最新文件
 //   - 离线时回退到缓存，保证离线可用
 // ============================================================
 
-const CACHE_NAME = 'poker-timer-v1';
+const CACHE_NAME = 'poker-timer-v2';
 
 const ASSETS = [
   './',
@@ -46,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== location.origin) return; // 只处理同源请求
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-store' })
       .then((response) => {
         // 成功拉到最新，写回缓存
         const copy = response.clone();
