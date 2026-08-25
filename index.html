@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Poker Timer</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0a0a0a">
@@ -176,10 +176,6 @@
           <div class="game-countdown" id="game-countdown">08:00</div>
           <div class="game-next-level" id="game-next-level">下一级: <span>200 / 400</span></div>
         </div>
-        <!-- 暂停遮罩 -->
-        <div class="pause-overlay visible" id="pause-overlay">
-          <div class="pause-text">已暂停</div>
-        </div>
       </div>
 
       <!-- 右侧信息栏 -->
@@ -205,6 +201,11 @@
           <span class="info-label">🍄 蘑菇</span>
           <span class="info-value mushroom-display" id="info-mushroom">3/3</span>
         </div>
+      </div>
+
+      <!-- 暂停遮罩 -->
+      <div class="pause-overlay visible" id="pause-overlay">
+        <div class="pause-text">已暂停</div>
       </div>
     </div>
 
