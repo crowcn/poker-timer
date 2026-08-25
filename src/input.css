@@ -782,8 +782,8 @@
   /* 顶栏菜单浮层 */
   .app-menu {
     position: fixed;
-    top: 4.25rem;
-    right: 1rem;
+    top: 0;
+    left: 0;
     z-index: 40;
     min-width: 12rem;
     padding: 0.375rem;

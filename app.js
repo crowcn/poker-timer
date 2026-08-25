@@ -881,18 +881,33 @@ function renderAppMenu() {
     </label>`;
 }
 
-function openAppMenu() {
+// 以触发按钮为锚点定位菜单
+function positionAppMenu(menu, trigger) {
+  const r = trigger.getBoundingClientRect();
+  const w = menu.offsetWidth;
+  const h = menu.offsetHeight;
+  let top = r.bottom + 8;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - 8 - h);
+  let left = r.right - w;
+  if (left < 8) left = 8;
+  if (left + w > window.innerWidth - 8) left = window.innerWidth - 8 - w;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+  menu.style.right = 'auto';
+}
+
+function openAppMenu(trigger) {
   const menu = document.getElementById('app-menu');
-  if (menu.classList.contains('open')) { closeAppMenu(); return; }
   renderAppMenu();
   menu.classList.add('open');
+  positionAppMenu(menu, trigger);
 }
 
 function closeAppMenu() {
   document.getElementById('app-menu').classList.remove('open');
 }
 
-// 点击菜单外部关闭
+// 点击菜单外部关闭（点菜单本身或触发按钮不关）
 document.addEventListener('click', (e) => {
   if (e.target.closest('#app-menu') || e.target.closest('.menu-trigger')) return;
   closeAppMenu();

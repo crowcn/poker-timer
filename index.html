@@ -22,9 +22,9 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.4</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.5</span></h1>
       <div class="header-actions">
-        <button class="btn btn-ghost menu-trigger" onclick="openAppMenu()">☰ 菜单</button>
+        <button class="btn btn-ghost menu-trigger" onclick="openAppMenu(this)">☰</button>
       </div>
     </div>
 
@@ -236,7 +236,7 @@
       <button class="ctrl-btn" id="ctrl-end" onclick="showEndMenu()">
         🏁 结束
       </button>
-      <button class="ctrl-btn menu-trigger" onclick="openAppMenu()">☰</button>
+      <button class="ctrl-btn menu-trigger" onclick="openAppMenu(this)">☰</button>
       <button class="ctrl-btn" onclick="openSettingsFromGame()">
         ⚙️ <span class="ctrl-key">S</span>
       </button>
