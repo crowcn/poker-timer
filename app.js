@@ -171,7 +171,7 @@ async function updatePlayerHint() {
   hint.style.display = 'none';
   hint.textContent = '';
   if (!/^\d{4}$/.test(phone) || state.players.some(player => player.phoneLastFour === phone)) return;
-  const old = await getPlayer(phone).catch(() => null);
+  const old = (await getPlayersByPhone(phone).catch(() => []))[0];
   if (phoneInput.value.trim() !== phone) return;
   if (old) {
     nicknameInput.value = old.nickname;
@@ -275,16 +275,15 @@ async function addPlayerFromForm() {
   const seatInput = document.getElementById('input-seat');
   const phone = phoneInput.value.trim();
   if (!/^\d{4}$/.test(phone)) return alert('请输入4位手机尾号');
-  if (state.players.some(player => player.phoneLastFour === phone)) return alert('该手机尾号已登记');
+  const existing = await getPlayersByPhone(phone).catch(() => []);
   let nickname = nicknameInput.value.trim();
-  if (!nickname) {
-    const old = await getPlayer(phone).catch(() => null);
-    nickname = old?.nickname || '';
-  }
+  if (!nickname && existing.length) nickname = existing[0].nickname;
   if (!nickname) return alert('请输入昵称');
-  const player = { phoneLastFour: phone, nickname, seat: seatInput.value.trim(), inGame: true, eliminatedAt: null, eliminatedLevel: null, mushroomsUsed: 0, eliminationHistory: [], rebuySnapshot: null };
+  const id = existing.length ? existing[0].id : await nextPlayerId();
+  if (state.players.some(player => player.id === id)) return alert('该玩家已登记');
+  const player = { id, phoneLastFour: phone, nickname, seat: seatInput.value.trim(), inGame: true, eliminatedAt: null, eliminatedLevel: null, mushroomsUsed: 0, eliminationHistory: [], rebuySnapshot: null };
   state.players.push(player);
-  await addPlayer({ phoneLastFour: phone, nickname, createdAt: Date.now() }).catch(() => {});
+  await addPlayer({ id, phoneLastFour: phone, nickname, createdAt: Date.now() }).catch(() => {});
   phoneInput.value = ''; nicknameInput.value = ''; seatInput.value = '';
   document.getElementById('player-hint').style.display = 'none';
   renderPlayers();
@@ -422,31 +421,31 @@ function openPlayerActionModal(action) {
   const candidates = state.players.filter(player => action === 'eliminate' ? player.inGame : !player.inGame);
   if (!candidates.length) return alert(action === 'eliminate' ? '当前没有在场玩家' : '当前没有可复活的已淘汰玩家');
   if (action === 'mushroom' && !canUseMushroom()) return alert('当前无法使用蘑菇');
-  modalAction = { type: action, phone: candidates[0].phoneLastFour };
+  modalAction = { type: action, id: candidates[0].id };
   const title = action === 'eliminate' ? '💀 确认淘汰' : '🍄 蘑菇复活';
   const button = action === 'eliminate' ? '确认淘汰' : '确认复活';
-  const rows = candidates.map(player => `<li class="modal-player-item ${player.phoneLastFour === modalAction.phone ? 'selected' : ''}" data-phone="${escapeHTML(player.phoneLastFour)}" onclick="selectModalPlayer('${player.phoneLastFour}')"><span>${action === 'eliminate' ? '🟢' : '⚫'}</span><b>${escapeHTML(player.nickname)}</b><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span></li>`).join('');
+  const rows = candidates.map(player => `<li class="modal-player-item ${player.id === modalAction.id ? 'selected' : ''}" data-id="${player.id}" onclick="selectModalPlayer(${player.id})"><span>${action === 'eliminate' ? '🟢' : '⚫'}</span><b>${escapeHTML(player.nickname)}</b><span class="player-phone">(${escapeHTML(player.phoneLastFour)})</span></li>`).join('');
   document.getElementById('modal-content').innerHTML = `<div class="modal-header">${title}</div><div class="modal-body"><ul class="modal-player-list">${rows}</ul><p class="modal-info" id="modal-action-info"></p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn ${action === 'eliminate' ? 'btn-danger' : 'btn-primary'}" onclick="confirmPlayerAction()">${button}</button></div>`;
   document.getElementById('modal-overlay').classList.add('visible'); updateModalInfo();
 }
 
-function selectModalPlayer(phone) {
+function selectModalPlayer(id) {
   if (!modalAction) return;
-  modalAction.phone = phone;
+  modalAction.id = Number(id);
   document.querySelectorAll('.modal-player-item').forEach(item => {
-    const selected = item.dataset.phone === phone;
+    const selected = Number(item.dataset.id) === modalAction.id;
     item.classList.toggle('selected', selected);
   });
   updateModalInfo();
 }
 function updateModalInfo() {
   const info = document.getElementById('modal-action-info');
-  const player = state.players.find(item => item.phoneLastFour === modalAction?.phone);
+  const player = state.players.find(item => item.id === modalAction?.id);
   if (info && player) info.textContent = modalAction.type === 'eliminate' ? `当前级别：${levelLabel()} · 比赛时间：${formatShortDuration(elapsedSeconds())}` : `复活筹码：${formatNumber(state.config.buyin)} · 剩余蘑菇：${state.config.mushrooms - state.mushroomsUsed}/${state.config.mushrooms}`;
 }
 
 function confirmPlayerAction() {
-  const player = state.players.find(item => item.phoneLastFour === modalAction?.phone);
+  const player = state.players.find(item => item.id === modalAction?.id);
   if (!player) return;
   if (modalAction.type === 'eliminate') {
     player.eliminationHistory = player.eliminationHistory || [];
@@ -473,22 +472,22 @@ function renderDrawer() {
   if (!body) return;
   const active = state.players.filter(player => player.inGame);
   const out = state.players.filter(player => !player.inGame);
-  const row = player => `<div class="drawer-player ${player.inGame ? '' : 'is-eliminated'}"><div class="dp-info"><span class="dp-status ${player.inGame ? '' : 'eliminated'}"></span><div><div class="dp-name">${escapeHTML(player.nickname)}</div><div class="dp-phone">(${escapeHTML(player.phoneLastFour)})${player.seat ? ` · 座位${escapeHTML(player.seat)}` : ''}</div></div></div><div class="dp-actions">${player.inGame ? `${player.rebuySnapshot ? `<button class="btn btn-secondary btn-sm" onclick="undoMushroom('${player.phoneLastFour}')">撤销蘑菇</button>` : ''}<button class="btn btn-danger btn-sm" onclick="drawerEliminate('${player.phoneLastFour}')">💀</button>` : `<button class="btn btn-secondary btn-sm" onclick="drawerRestore('${player.phoneLastFour}')">恢复在场</button>${canUseMushroom() ? `<button class="btn btn-primary btn-sm" onclick="drawerMushroom('${player.phoneLastFour}')">🍄</button>` : ''}`}</div></div>`;
+  const row = player => `<div class="drawer-player ${player.inGame ? '' : 'is-eliminated'}"><div class="dp-info"><span class="dp-status ${player.inGame ? '' : 'eliminated'}"></span><div><div class="dp-name">${escapeHTML(player.nickname)}</div><div class="dp-phone">(${escapeHTML(player.phoneLastFour)})${player.seat ? ` · 座位${escapeHTML(player.seat)}` : ''}</div></div></div><div class="dp-actions">${player.inGame ? `${player.rebuySnapshot ? `<button class="btn btn-secondary btn-sm" onclick="undoMushroom(${player.id})">撤销蘑菇</button>` : ''}<button class="btn btn-danger btn-sm" onclick="drawerEliminate(${player.id})">💀</button>` : `<button class="btn btn-secondary btn-sm" onclick="drawerRestore(${player.id})">恢复在场</button>${canUseMushroom() ? `<button class="btn btn-primary btn-sm" onclick="drawerMushroom(${player.id})">🍄</button>` : ''}`}</div></div>`;
   body.innerHTML = `<div class="drawer-section-title">在场（${active.length}）</div>${active.map(row).join('') || '<div class="empty-state">暂无玩家</div>'}<div class="drawer-section-title">已淘汰（${out.length}）</div>${out.map(row).join('') || '<div class="empty-state">暂无玩家</div>'}`;
 }
-function drawerEliminate(phone) { closeDrawer(); openPlayerActionModal('eliminate'); selectModalPlayer(phone); }
-function drawerMushroom(phone) { closeDrawer(); openPlayerActionModal('mushroom'); selectModalPlayer(phone); }
-function drawerRestore(phone) {
-  const player = state.players.find(item => item.phoneLastFour === phone); if (!player) return;
+function drawerEliminate(id) { closeDrawer(); openPlayerActionModal('eliminate'); selectModalPlayer(id); }
+function drawerMushroom(id) { closeDrawer(); openPlayerActionModal('mushroom'); selectModalPlayer(id); }
+function drawerRestore(id) {
+  const player = state.players.find(item => item.id === Number(id)); if (!player) return;
   player.inGame = true; player.eliminatedAt = null; player.eliminatedLevel = null; player.eliminationSequence = 0;
-  addEvent('restore', `${player.nickname}(${phone}) 恢复在场`); renderDrawer(); updateGameDisplay(); persistProgress();
+  addEvent('restore', `${player.nickname}(${player.phoneLastFour}) 恢复在场`); renderDrawer(); updateGameDisplay(); persistProgress();
 }
-function undoMushroom(phone) {
-  const player = state.players.find(item => item.phoneLastFour === phone); const snapshot = player?.rebuySnapshot;
+function undoMushroom(id) {
+  const player = state.players.find(item => item.id === Number(id)); const snapshot = player?.rebuySnapshot;
   if (!player || !snapshot) return;
   player.inGame = false; player.eliminatedAt = snapshot.eliminatedAt; player.eliminatedLevel = snapshot.eliminatedLevel; player.eliminationSequence = snapshot.eliminationSequence;
   player.mushroomsUsed = Math.max(0, player.mushroomsUsed - 1); state.mushroomsUsed = Math.max(0, state.mushroomsUsed - 1); player.rebuySnapshot = null;
-  addEvent('mushroom-undo', `${player.nickname}(${phone}) 撤销蘑菇复活 🍄（剩余${state.config.mushrooms - state.mushroomsUsed}/${state.config.mushrooms}）`);
+  addEvent('mushroom-undo', `${player.nickname}(${player.phoneLastFour}) 撤销蘑菇复活 🍄（剩余${state.config.mushrooms - state.mushroomsUsed}/${state.config.mushrooms}）`);
   renderDrawer(); updateGameDisplay(); persistProgress();
 }
 
@@ -507,11 +506,11 @@ function updateChopTable() {
     document.querySelectorAll('.chop-prize').forEach((input, index) => { input.value = currentTotal ? Math.floor(pool * currents[index] / currentTotal) : 0; });
     return;
   }
-  const previousRanks = new Map(Array.from(document.querySelectorAll('.chop-rank')).map(input => [input.dataset.phone, input.value]));
-  const previousCurrent = new Map(Array.from(document.querySelectorAll('.chop-current')).map(input => [input.dataset.phone, input.value]));
-  const previousPrize = new Map(Array.from(document.querySelectorAll('.chop-prize')).map(input => [input.dataset.phone, input.value]));
+  const previousRanks = new Map(Array.from(document.querySelectorAll('.chop-rank')).map(input => [input.dataset.id, input.value]));
+  const previousCurrent = new Map(Array.from(document.querySelectorAll('.chop-current')).map(input => [input.dataset.id, input.value]));
+  const previousPrize = new Map(Array.from(document.querySelectorAll('.chop-prize')).map(input => [input.dataset.id, input.value]));
   const body = document.getElementById('chop-body'); if (!body) return;
-  body.innerHTML = players.map((player, index) => `<tr><td><input class="chop-rank" data-phone="${player.phoneLastFour}" type="number" min="1" max="${players.length}" value="${previousRanks.get(player.phoneLastFour) ?? index + 1}"></td><td>${escapeHTML(player.nickname)}</td><td><input class="chop-current" data-phone="${player.phoneLastFour}" type="number" min="0" value="${previousCurrent.get(player.phoneLastFour) ?? state.config.buyin}" ${method === 'ratio' ? '' : 'readonly'} oninput="updateChopTable()"></td><td><input class="chop-prize" data-phone="${player.phoneLastFour}" type="number" min="0" value="${previousPrize.get(player.phoneLastFour) ?? each}" ${method === 'custom' ? '' : 'readonly'}></td></tr>`).join('');
+  body.innerHTML = players.map((player, index) => `<tr><td><input class="chop-rank" data-id="${player.id}" type="number" min="1" max="${players.length}" value="${previousRanks.get(String(player.id)) ?? index + 1}"></td><td>${escapeHTML(player.nickname)}</td><td><input class="chop-current" data-id="${player.id}" type="number" min="0" value="${previousCurrent.get(String(player.id)) ?? state.config.buyin}" ${method === 'ratio' ? '' : 'readonly'} oninput="updateChopTable()"></td><td><input class="chop-prize" data-id="${player.id}" type="number" min="0" value="${previousPrize.get(String(player.id)) ?? each}" ${method === 'custom' ? '' : 'readonly'}></td></tr>`).join('');
   if (method === 'ratio') {
     const currents = Array.from(document.querySelectorAll('.chop-current')).map(input => Math.max(0, Number(input.value) || 0));
     const currentTotal = currents.reduce((sum, value) => sum + value, 0);
@@ -522,8 +521,8 @@ function updateChopTable() {
 }
 function confirmChop() {
   const prizes = {}; const chopRanks = {};
-  document.querySelectorAll('.chop-prize').forEach(input => { prizes[input.dataset.phone] = Math.max(0, Number(input.value) || 0); });
-  document.querySelectorAll('.chop-rank').forEach(input => { chopRanks[input.dataset.phone] = Number(input.value); });
+  document.querySelectorAll('.chop-prize').forEach(input => { prizes[input.dataset.id] = Math.max(0, Number(input.value) || 0); });
+  document.querySelectorAll('.chop-rank').forEach(input => { chopRanks[input.dataset.id] = Number(input.value); });
   const ranks = Object.values(chopRanks); const activeCount = inGamePlayers().length;
   if (ranks.length !== activeCount || new Set(ranks).size !== activeCount || ranks.some(rank => !Number.isInteger(rank) || rank < 1 || rank > activeCount)) return alert(`请为 ${activeCount} 名协商玩家填写不重复的最终名次`);
   const total = Object.values(prizes).reduce((sum, value) => sum + value, 0);
@@ -539,23 +538,23 @@ function finishGame(reason) {
   if (!state.settlement) state.settlement = { prizes: calculateNaturalPrizes() };
   const rankings = buildRankings();
   const tournament = { id: state.tournamentId, name: state.config.name, date: new Date().toISOString(), config: JSON.parse(JSON.stringify(state.config)), totalPrizePool: totalChips(), durationMinutes: state.elapsedBeforeRun / 60, finalLevel: state.levelIndex + 1, mushroomsUsed: state.mushroomsUsed, endReason: reason, events: state.events, rankings };
-  addTournament(tournament).then(() => addParticipations(rankings.map(item => ({ tournamentId: state.tournamentId, phoneLastFour: item.phoneLastFour, finalRank: item.rank, eliminatedAt: item.eliminatedAt, eliminatedAtLevel: item.eliminatedLevel, mushroomsUsed: item.mushroomsUsed, prizeChips: item.prizeChips })))).catch(error => console.error('保存比赛失败:', error));
+  addTournament(tournament).then(() => addParticipations(rankings.map(item => ({ tournamentId: state.tournamentId, playerId: item.playerId, finalRank: item.rank, eliminatedAt: item.eliminatedAt, eliminatedAtLevel: item.eliminatedLevel, mushroomsUsed: item.mushroomsUsed, prizeChips: item.prizeChips })))).catch(error => console.error('保存比赛失败:', error));
   clearProgress(); playGameEnd(); renderSettlement(tournament, rankings); showView('settlement'); showExportPrompt(tournament);
 }
 
 function buildRankings() {
   const chopRanks = state.settlement?.chopRanks || {};
-  const active = state.players.filter(player => player.inGame).sort((a, b) => (chopRanks[a.phoneLastFour] || Infinity) - (chopRanks[b.phoneLastFour] || Infinity));
+  const active = state.players.filter(player => player.inGame).sort((a, b) => (chopRanks[a.id] || Infinity) - (chopRanks[b.id] || Infinity));
   const eliminated = state.players.filter(player => !player.inGame).sort((a, b) => (b.eliminationSequence || 0) - (a.eliminationSequence || 0));
   const ordered = [...active, ...eliminated];
   const prizes = state.settlement?.prizes || {};
-  return ordered.map((player, index) => ({ ...player, rank: index + 1, prizeChips: prizes[player.phoneLastFour] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedAtLevel: player.inGame ? null : player.eliminatedLevel }));
+  return ordered.map((player, index) => ({ ...player, playerId: player.id, rank: index + 1, prizeChips: prizes[player.id] || 0, eliminatedAt: player.inGame ? null : player.eliminatedAt, eliminatedAtLevel: player.inGame ? null : player.eliminatedLevel }));
 }
 function calculateNaturalPrizes() {
   const rankings = buildRankings();
   const ratios = state.config.prizeMode === 'custom' ? state.config.customPrize : (PRIZE_RATIOS[state.config.prizeMode] || PRIZE_RATIOS['top3-50']);
   const prizes = {};
-  ratios.forEach((ratio, index) => { const player = rankings[index]; if (player) prizes[player.phoneLastFour] = Math.floor(totalChips() * ratio / 100); });
+  ratios.forEach((ratio, index) => { const player = rankings[index]; if (player) prizes[player.id] = Math.floor(totalChips() * ratio / 100); });
   return prizes;
 }
 function renderPrizePreview() {
@@ -568,7 +567,7 @@ function renderSettlement(tournament, rankings) {
   const view = document.getElementById('view-settlement');
   view.innerHTML = `<div class="settlement-header"><div class="trophy">🏆</div><h2>比赛结束</h2><p>${escapeHTML(tournament.name)} · ${new Date(tournament.date).toLocaleDateString('zh-CN')}</p></div><div class="settlement-body"><div class="settlement-left"><div class="stat-card"><table class="rank-table"><thead><tr><th>排名</th><th>玩家</th><th>淘汰时间</th><th>蘑菇</th><th>奖励筹码</th></tr></thead><tbody id="rankings-body">${rankings.map(item => settlementRow(item)).join('')}</tbody></table></div><div class="event-log"><h4>事件日志</h4>${state.events.map(event => `<div class="event-entry"><span class="event-time">[${formatShortDuration(event.time)}]</span> ${escapeHTML(event.detail)}</div>`).join('')}</div></div><div class="settlement-right"><div class="stat-card"><div class="stat-label">比赛时长</div><div class="stat-value">${formatDuration(tournament.durationMinutes * 60)}</div></div><div class="stat-card"><div class="stat-label">经过级别</div><div class="stat-value">${tournament.finalLevel}</div></div><div class="stat-card"><div class="stat-label">蘑菇使用</div><div class="stat-value">${tournament.mushroomsUsed}/${state.config.mushrooms}</div></div><div class="stat-card"><div class="stat-label">总筹码池</div><div class="stat-value">${formatNumber(tournament.totalPrizePool)}</div></div><div class="settlement-actions"><button class="btn btn-secondary" onclick="exportCurrentTournament()">导出 JSON</button><button class="btn btn-secondary" onclick="showHistory()">查看排行榜</button><button class="btn btn-primary" onclick="newGame()">开始新比赛</button></div></div></div>`;
 }
-function settlementRow(item) { const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank; return `<tr><td class="rank-medal">${medal}</td><td>${escapeHTML(item.nickname)} <small>(${escapeHTML(item.phoneLastFour)})</small></td><td>${item.eliminatedAt == null ? '冠军/协商' : formatShortDuration(item.eliminatedAt)}</td><td>${item.mushroomsUsed || 0}</td><td class="rank-prize"><input type="number" min="0" value="${item.prizeChips}" onchange="changePrize('${item.phoneLastFour}', this.value)"></td></tr>`; }
+function settlementRow(item) { const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank; return `<tr><td class="rank-medal">${medal}</td><td>${escapeHTML(item.nickname)} <small>(${escapeHTML(item.phoneLastFour)})</small></td><td>${item.eliminatedAt == null ? '冠军/协商' : formatShortDuration(item.eliminatedAt)}</td><td>${item.mushroomsUsed || 0}</td><td class="rank-prize"><input type="number" min="0" value="${item.prizeChips}" onchange="changePrize(${item.id}, this.value)"></td></tr>`; }
 function showExportPrompt(tournament) {
   document.getElementById('modal-content').innerHTML = `<div class="modal-header">备份比赛数据</div><div class="modal-body"><p class="modal-info">比赛已保存，是否立即导出本场 JSON 备份？</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">暂不导出</button><button class="btn btn-primary" onclick="exportTournamentData(window.finishedTournament)">导出 JSON</button></div>`;
   window.finishedTournament = tournament;
@@ -579,16 +578,17 @@ function exportTournamentData(tournament) {
   downloadJSON(tournament, `poker-timer-${tournament.id || 'backup'}.json`);
   closeModal();
 }
-async function changePrize(phone, value) {
+async function changePrize(id, value) {
   if (!state.settlement) return;
-  state.settlement.prizes[phone] = Math.max(0, Number(value) || 0);
+  const key = String(id);
+  state.settlement.prizes[key] = Math.max(0, Number(value) || 0);
   if (state.tournamentId) {
     const tournament = await getTournament(state.tournamentId).catch(() => null);
     if (!tournament?.rankings) return;
-    const item = tournament.rankings.find(row => row.phoneLastFour === phone);
-    if (item) item.prizeChips = state.settlement.prizes[phone];
+    const item = tournament.rankings.find(row => row.playerId === Number(id));
+    if (item) item.prizeChips = state.settlement.prizes[key];
     await addTournament(tournament).catch(() => {});
-    await addParticipations(tournament.rankings.map(row => ({ tournamentId: tournament.id, phoneLastFour: row.phoneLastFour, finalRank: row.rank, eliminatedAt: row.eliminatedAt, eliminatedAtLevel: row.eliminatedLevel, mushroomsUsed: row.mushroomsUsed, prizeChips: row.prizeChips }))).catch(() => {});
+    await addParticipations(tournament.rankings.map(row => ({ tournamentId: tournament.id, playerId: row.playerId, finalRank: row.rank, eliminatedAt: row.eliminatedAt, eliminatedAtLevel: row.eliminatedLevel, mushroomsUsed: row.mushroomsUsed, prizeChips: row.prizeChips }))).catch(() => {});
   }
 }
 function newGame() {
@@ -622,12 +622,19 @@ function restorePrompt() {
   document.getElementById('modal-overlay').classList.add('visible'); window.pendingProgress = progress;
 }
 function discardRecovery() { clearProgress(); closeModal(); }
-function restoreGame() {
+async function restoreGame() {
   Object.assign(state, window.pendingProgress);
   state.levelElapsedBeforeRun = state.levelElapsedBeforeRun || 0;
   state.eliminationSequence = state.eliminationSequence || 0;
   state.events = state.events || [];
-  state.players = (state.players || []).map(player => ({ ...player, inGame: player.inGame !== false, mushroomsUsed: player.mushroomsUsed || 0, eliminationHistory: player.eliminationHistory || [], eliminationSequence: player.eliminationSequence || 0, rebuySnapshot: player.rebuySnapshot || null }));
+  // 兼容旧进度：为缺 id 的玩家按尾号回填编号（查不到则分配新 id）
+  const players = state.players || [];
+  for (const player of players) {
+    if (player.id != null) continue;
+    const matches = await getPlayersByPhone(player.phoneLastFour).catch(() => []);
+    player.id = matches.length ? matches[0].id : await nextPlayerId();
+  }
+  state.players = players.map(player => ({ ...player, inGame: player.inGame !== false, mushroomsUsed: player.mushroomsUsed || 0, eliminationHistory: player.eliminationHistory || [], eliminationSequence: player.eliminationSequence || 0, rebuySnapshot: player.rebuySnapshot || null }));
   state.running = false; state.levelStartedAt = 0; closeModal(); showView('game'); startTicker(); updateGameDisplay();
 }
 
