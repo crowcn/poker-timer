@@ -219,6 +219,7 @@
   }
   html, body {
     height: 100%;
+    background-color: var(--color-background);
   }
   body {
     background-color: var(--color-background);
@@ -1845,6 +1846,49 @@
   }
   .mushroom-display {
     font-size: 2rem;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .game-left {
+    padding: 0.5rem 1rem;
+  }
+  .game-top-bar {
+    position: static;
+    margin-bottom: 0.5rem;
+  }
+  .game-level {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.875rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+  }
+  .game-ring {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 0.5rem;
+  }
+  .game-countdown {
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+  .game-blinds {
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  .blind-label {
+    font-size: 0.625rem;
+    margin-bottom: 0.125rem;
+    letter-spacing: 1px;
+  }
+  .blind-value {
+    font-size: 1.5rem;
+  }
+  .blind-divider {
+    font-size: 1rem;
+    margin-top: 0.375rem;
+  }
+  .game-next-level {
+    display: none;
   }
 }
 @property --tw-rotate-x {
