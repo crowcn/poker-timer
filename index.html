@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Poker Timer</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#120E0B">
   <meta name="color-scheme" content="dark">
   <!-- 添加到主屏幕（iOS + 安卓） -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
        ============================================================ -->
   <div id="view-setup" class="view setup-view active">
     <div class="setup-header">
-      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.8</span></h1>
+      <h1>Poker Timer <span class="app-version" id="app-version">v1.6.9</span></h1>
       <div class="header-actions">
         <button class="btn btn-ghost menu-trigger" onclick="openAppMenu(this)">☰</button>
       </div>
@@ -164,12 +164,16 @@
             <svg class="ring-svg" viewBox="0 0 120 120">
               <defs>
                 <filter id="ring-glow" x="-60%" y="-60%" width="220%" height="220%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#f5f5f5" flood-opacity="0.35"/>
+                  <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#D4B256" flood-opacity="0.35"/>
                 </filter>
               </defs>
               <circle class="ring-track" cx="60" cy="60" r="54"></circle>
               <circle class="ring-progress" id="ring-progress" cx="60" cy="60" r="54" filter="url(#ring-glow)"></circle>
             </svg>
+            <span class="ring-suit s-top">&#9824;&#65038;</span>
+            <span class="ring-suit s-right">&#9829;&#65038;</span>
+            <span class="ring-suit s-bottom">&#9830;&#65038;</span>
+            <span class="ring-suit s-left">&#9827;&#65038;</span>
             <div class="game-countdown" id="game-countdown">08:00</div>
           </div>
           <div class="game-blinds" id="game-blinds">

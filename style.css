@@ -11,20 +11,20 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --color-background: oklch(0.13 0 0);
-    --color-foreground: oklch(0.96 0 0);
-    --color-card: oklch(0.17 0 0);
-    --color-popover: oklch(0.15 0 0);
-    --color-primary: oklch(0.96 0 0);
-    --color-primary-foreground: oklch(0.13 0 0);
-    --color-secondary: oklch(0.2 0 0);
-    --color-secondary-foreground: oklch(0.96 0 0);
-    --color-muted-foreground: oklch(0.58 0 0);
-    --color-accent: oklch(0.23 0 0);
-    --color-destructive: oklch(0.58 0.19 25);
-    --color-destructive-foreground: oklch(0.96 0 0);
-    --color-border: oklch(0.27 0 0);
-    --color-input: oklch(0.27 0 0);
+    --color-background: oklch(0.16 0.008 70);
+    --color-foreground: oklch(0.94 0.004 85);
+    --color-card: oklch(0.208 0.008 70);
+    --color-popover: oklch(0.19 0.008 70);
+    --color-primary: oklch(0.80 0.11 82);
+    --color-primary-foreground: oklch(0.16 0.01 70);
+    --color-secondary: oklch(0.208 0.008 70);
+    --color-secondary-foreground: oklch(0.94 0.004 85);
+    --color-muted-foreground: oklch(0.60 0.012 60);
+    --color-accent: oklch(0.27 0.010 70);
+    --color-destructive: oklch(0.58 0.15 27);
+    --color-destructive-foreground: oklch(0.97 0.012 40);
+    --color-border: oklch(0.30 0.012 70);
+    --color-input: oklch(0.24 0.010 70);
   }
 }
 @layer base {
@@ -604,7 +604,7 @@
   }
   .prize-option.selected {
     border-color: var(--color-primary);
-    background: oklch(0.96 0 0 / 0.06);
+    background: oklch(0.80 0.11 82 / 0.06);
   }
   .prize-option input[type="radio"] {
     accent-color: var(--color-foreground);
@@ -723,7 +723,7 @@
   }
   .ring-progress {
     fill: none;
-    stroke: var(--color-foreground);
+    stroke: var(--color-primary);
     stroke-width: 6;
     stroke-linecap: round;
     stroke-dasharray: 339.29;
@@ -742,11 +742,41 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: 2px;
     line-height: 1;
+    color: var(--color-primary);
     transition: color 0.3s ease;
   }
   .game-countdown.warning {
     color: var(--color-destructive);
     animation: pulse 1s infinite;
+  }
+  .ring-suit {
+    position: absolute;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: oklch(0.80 0.11 82 / 0.40);
+    text-shadow: 0 0 10px oklch(0.80 0.11 82 / 0.36);
+    pointer-events: none;
+    user-select: none;
+  }
+  .ring-suit.s-top {
+    top: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .ring-suit.s-bottom {
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .ring-suit.s-left {
+    left: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .ring-suit.s-right {
+    right: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
   }
   .game-blinds {
     display: flex;
@@ -769,8 +799,9 @@
     font-size: 3.25rem;
     font-weight: 800;
     line-height: 1;
+    color: var(--color-primary);
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 40px oklch(0.96 0 0 / 0.12);
+    text-shadow: 0 0 40px oklch(0.80 0.11 82 / 0.14);
   }
   .blind-divider {
     color: var(--color-muted-foreground);
@@ -790,7 +821,7 @@
     color: var(--color-muted-foreground);
   }
   .game-next-level .next-blinds {
-    color: var(--color-foreground);
+    color: var(--color-primary);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
@@ -823,6 +854,7 @@
     font-weight: 700;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    color: var(--color-primary);
   }
   .info-item.clickable {
     cursor: pointer;
@@ -835,6 +867,7 @@
     margin-top: 0.5rem;
     padding: 0.875rem;
     background: var(--color-card);
+    border: 1px solid oklch(0.80 0.11 82 / 0.28);
     border-radius: var(--radius-md);
   }
   .prize-preview h4 {
@@ -856,10 +889,12 @@
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+    color: var(--color-primary);
   }
   .mushroom-display {
     font-size: 1.5rem;
     font-weight: 700;
+    color: var(--color-primary);
   }
   .game-controls {
     display: flex;
@@ -911,7 +946,7 @@
   .ctrl-key {
     font-size: 0.625rem;
     color: var(--color-muted-foreground);
-    background: oklch(1 0 0 / 0.08);
+    background: oklch(1 0 0 / 0.09);
     padding: 1px 4px;
     border-radius: 3px;
     margin-left: 0.25rem;
@@ -994,7 +1029,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: oklch(0.96 0 0 / 0.08);
+    background: oklch(0.80 0.11 82 / 0.10);
     z-index: 90;
     pointer-events: none;
   }
@@ -1170,7 +1205,7 @@
     background: var(--color-card);
   }
   .modal-player-item.selected {
-    background: oklch(0.96 0 0 / 0.08);
+    background: oklch(0.80 0.11 82 / 0.08);
     border: 1px solid var(--color-primary);
   }
   .end-menu {
@@ -1471,11 +1506,11 @@
     color: var(--color-primary-foreground);
   }
   .lb-rank.rank-2 {
-    background: oklch(0.6 0 0);
+    background: oklch(0.66 0.008 85);
     color: var(--color-background);
   }
   .lb-rank.rank-3 {
-    background: oklch(0.4 0 0);
+    background: oklch(0.46 0.03 55);
     color: var(--color-foreground);
   }
   .lb-info {
@@ -1716,6 +1751,9 @@
   .game-countdown {
     font-size: 3.5rem;
   }
+  .ring-suit {
+    font-size: 1rem;
+  }
   .blind-value {
     font-size: 2.5rem;
   }
@@ -1768,6 +1806,9 @@
   .game-countdown {
     font-size: 2.75rem;
     letter-spacing: 1px;
+  }
+  .ring-suit {
+    font-size: 0.875rem;
   }
   .blind-value {
     font-size: 1.75rem;
@@ -1825,6 +1866,9 @@
   .game-countdown {
     font-size: 5.5rem;
   }
+  .ring-suit {
+    font-size: 1.5rem;
+  }
   .blind-value {
     font-size: 4rem;
   }
@@ -1872,6 +1916,9 @@
   .game-countdown {
     font-size: 2rem;
     letter-spacing: 1px;
+  }
+  .ring-suit {
+    font-size: 0.5rem;
   }
   .game-blinds {
     gap: 0.75rem;
